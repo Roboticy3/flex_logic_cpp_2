@@ -15,7 +15,14 @@ class AudioEffectTapInstance : public AudioEffectInstance {
 
   friend class AudioEffectTap;
 
+  //parameters taken from effect resource
   Ref<CircuitTap> circuit;
+  float activation_delta;
+  tap_label_t component_id;
+
+  //instance specific state
+  AudioFrame last_activation = {0.0, 0.0};
+  tap_time_t total_time = 0;
   
   public:
     virtual void process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) override;
@@ -32,6 +39,7 @@ class AudioEffectTap : public AudioEffect {
 
   Ref<CircuitTap> circuit;
   float activation_delta = 0.0;
+  tap_label_t component_id = -1;
 
   protected:
     static void _bind_methods();

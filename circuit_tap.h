@@ -20,17 +20,15 @@ Store templates for circuit primitives that can be attached to an audio tap
 class CircuitTap : public Resource {
   GDCLASS(CircuitTap, Resource)
 
-  tap_queue_t queue;
-  HashMap<tap_label_t, tap_component_t> components;
-
   protected:
     static void _bind_methods();
 
   public:
 
+    tap_queue_t queue;
+    HashMap<tap_label_t, tap_component_t> components;
+
     Vector2 view_next_frame();
-    
-    tap_queue_t *qptrw();
 
     CircuitTap() = default;
 };
