@@ -6,7 +6,9 @@
 #include "core/math/audio_frame.h"
 
 /*
+DEPRECATED
 
+Store a frame buffer from a cache.
 */
 class FrameCache : public Resource {
   GDCLASS(FrameCache, Resource);
