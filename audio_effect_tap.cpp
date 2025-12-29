@@ -4,7 +4,8 @@
 #include "core/math/math_defs.h"
 
 #include "audio_effect_tap.h"
-#include "circuit_tap.h"
+#include "tap_circuit_types.h"
+#include "tap_user.h"
 
 void AudioEffectTap::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_activation_delta"), &AudioEffectTap::get_activation_delta);
@@ -33,11 +34,11 @@ void AudioEffectTap::set_activation_delta(tap_frame::bytes_t new_activation_delt
   activation_delta = new_activation_delta;
 }
 
-Ref<CircuitTap> AudioEffectTap::get_circuit() {
+Ref<TapUser> AudioEffectTap::get_circuit() {
   return circuit;
 }
 
-void AudioEffectTap::set_circuit(Ref<CircuitTap> new_circuit) {
+void AudioEffectTap::set_circuit(Ref<TapUser> new_circuit) {
   circuit = new_circuit;
 
   if (circuit.is_null()) {
@@ -46,7 +47,7 @@ void AudioEffectTap::set_circuit(Ref<CircuitTap> new_circuit) {
 }
 
 AudioEffectTap::AudioEffectTap() {
-  Ref<CircuitTap> instance;
+  Ref<TapUser> instance;
   instance.instantiate();
   circuit = instance;
 }
@@ -61,7 +62,7 @@ void AudioEffectTapInstance::process(const AudioFrame *p_src_frames, AudioFrame 
     //max_value = src_frame.left > max_value ? src_frame.left : max_value;
     //max_value = src_frame.right > max_value ? src_frame.right : max_value;
     if (last_activation.delta(src_frame) >= activation_delta) {
-      circuit->queue.insert({component_id, tap_frame(p_src_frames[i]), total_time + i}, total_time + i);
+      circuit->push_event({component_id, tap_frame(p_src_frames[i]), total_time + i});
       last_activation = tap_frame(p_src_frames[i]);
     }
   }

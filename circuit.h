@@ -26,8 +26,9 @@ struct circuit_event_t {
 template<typename S, typename T>
 using circuit_queue_t = hb_priority_queue_t<circuit_event_t<S, T>>;
 
-template<typename S, typename T, typename ID>
+template<typename S, typename T, typename IDOut, typename IDIn>
 struct circuit_component_t {
-  void(*solver)(Vector<S> inputs, int change, Span<ID> pins, circuit_queue_t<S, T> &queue);
+  void(*solver)(Vector<S> inputs, int change, Span<IDOut> pins, circuit_queue_t<S, T> &queue);
   StringName name;
+  Vector<IDIn> sensitive;
 };

@@ -5,7 +5,8 @@
 #include "core/math/audio_frame.h"
 #include "core/math/vector2i.h"
 
-#include "circuit_tap.h"
+#include "tap_user.h"
+#include "tap_circuit_types.h"
 
 /*
 Be an instance of the AudioEffectTap, and maintain a reference to an event queue.
@@ -16,7 +17,7 @@ class AudioEffectTapInstance : public AudioEffectInstance {
   friend class AudioEffectTap;
 
   //parameters taken from effect resource
-  Ref<CircuitTap> circuit;
+  Ref<TapUser> circuit;
   tap_frame::bytes_t activation_delta;
   tap_label_t component_id;
 
@@ -37,7 +38,7 @@ class AudioEffectTap : public AudioEffect {
 
   friend class AudioEffectTapInstance;
 
-  Ref<CircuitTap> circuit;
+  Ref<TapUser> circuit;
   tap_frame::bytes_t activation_delta = 1;
   tap_label_t component_id = -1;
 
@@ -50,8 +51,8 @@ class AudioEffectTap : public AudioEffect {
     tap_frame::bytes_t get_activation_delta();
     void set_activation_delta(tap_frame::bytes_t new_activation_delta);
 
-    Ref<CircuitTap> get_circuit();
-    void set_circuit(Ref<CircuitTap> new_circuit);
+    Ref<TapUser> get_circuit();
+    void set_circuit(Ref<TapUser> new_circuit);
 
 
     AudioEffectTap();

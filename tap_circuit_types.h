@@ -4,14 +4,7 @@
 #include <cfloat>
 #include <optional>
 
-#include "core/object/class_db.h"
-#include "core/io/resource.h"
-#include "core/variant/variant.h"
 #include "core/math/audio_frame.h"
-#include "core/templates/hash_map.h"
-
-#include "circuit_tap.h"
-#include "circuit.h"
 
 struct tap_frame {
   using bytes_t = uint16_t;
@@ -91,33 +84,5 @@ typedef unsigned int tap_label_t;
 typedef unsigned int tap_time_t;
 typedef uint16_t tap_state_t;
 typedef circuit_queue_t<tap_frame, tap_time_t> tap_queue_t;
-typedef circuit_component_t<tap_frame, tap_time_t, tap_label_t> tap_component_t;
-
-/*
-Store templates for circuit primitives that can be attached to an audio tap
-*/
-class CircuitTap : public Resource {
-  GDCLASS(CircuitTap, Resource)
-
-  protected:
-    static void _bind_methods();
-
-  public:
-
-    //event queue
-    tap_queue_t queue;
-
-    //number of samples made on the last event pass
-    int samples = 0;
-
-    //components for processing
-    HashMap<tap_label_t, tap_component_t> components;
-
-    int get_event_count();
-    Vector2i pop_event();
-    std::optional<circuit_event_t<tap_frame, tap_time_t>> pop_event_internal();
-
-    int get_sample_count();
-    
-    CircuitTap() = default;
-};
+typedef circuit_component_t<tap_frame, tap_time_t, tap_label_t, tap_label_t> tap_component_t;
+typedef circuit_event_t<tap_frame, tap_time_t> tap_event_t;

@@ -2,7 +2,7 @@
 
 #include "register_types.h"
 #include "frame_cache.h"
-#include "circuit_tap.h"
+#include "tap_user.h"
 #include "audio_effect_tap.h"
 
 void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
@@ -11,7 +11,7 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	}
 
 	ClassDB::register_class<FrameCache>();
-	ClassDB::register_class<CircuitTap>();
+	ClassDB::register_class<TapUser>();
 	ClassDB::register_class<AudioEffectTap>();
 }
 
