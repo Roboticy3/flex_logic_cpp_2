@@ -20,11 +20,17 @@ struct tap_frame {
   };
 
   static inline constexpr bytes_t channel_to_bytes(float channel) {
-    return bytes_t((channel + 1.f) * float(1 << 16));
+    // Map -1.0 to 1.0 to 0 to 65535
+    return static_cast<bytes_t>((channel + 1.0f) * 32767.5f);
   }
 
   static inline constexpr float bytes_to_channel(bytes_t bytes) {
-    return float(bytes) / float(1 << 16) - 1.f;
+    // Map 0 to 65535 back to -1.0 to 1.0
+    return (static_cast<float>(bytes) / 32767.5f) - 1.0f;
+  }
+
+  static inline constexpr bytes_t bytes_diff(tap_frame::bytes_t a, tap_frame::bytes_t b) {
+    return a > b ? a - b : b - a;
   }
 
   inline constexpr tap_frame(AudioFrame frame) :
@@ -44,6 +50,10 @@ struct tap_frame {
   inline constexpr AudioFrame audio_frame() const {
     return AudioFrame(bytes_to_channel(left), bytes_to_channel(left));
   }
+
+  inline constexpr const bytes_t delta(tap_frame with) const {
+    return bytes_diff(left, with.left) + bytes_diff(right, with.right);
+  }
 };
 
 typedef unsigned int tap_label_t;
@@ -58,7 +68,11 @@ Store templates for circuit primitives that can be attached to an audio tap
 class CircuitTap : public Resource {
   GDCLASS(CircuitTap, Resource)
 
+  //processing statistics to display for testing
   int last_frame_maximum = 0;
+  tap_frame::bytes_t delta_avg = 0;
+  tap_frame::bytes_t delta_max = 0;
+  tap_frame::bytes_t delta_min = 0;
 
   protected:
     static void _bind_methods();
@@ -73,6 +87,8 @@ class CircuitTap : public Resource {
 
     int get_last_frame_maximum();
     void set_last_frame_maximum(int p_maximum);
+
+    void flush_statistics();
     
     CircuitTap() = default;
 };

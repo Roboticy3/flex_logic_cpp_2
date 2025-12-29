@@ -17,7 +17,7 @@ class AudioEffectTapInstance : public AudioEffectInstance {
 
   //parameters taken from effect resource
   Ref<CircuitTap> circuit;
-  tap_frame::bytes_t activation_delta = 1;
+  tap_frame::bytes_t activation_delta;
   tap_label_t component_id;
 
   //instance specific state
@@ -38,7 +38,7 @@ class AudioEffectTap : public AudioEffect {
   friend class AudioEffectTapInstance;
 
   Ref<CircuitTap> circuit;
-  tap_frame::bytes_t activation_delta = 0;
+  tap_frame::bytes_t activation_delta = 1;
   tap_label_t component_id = -1;
 
   protected:

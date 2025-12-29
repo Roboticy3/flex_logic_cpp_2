@@ -53,16 +53,23 @@ AudioEffectTap::AudioEffectTap() {
 
 void AudioEffectTapInstance::process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 
+  //tap_frame::bytes_t max_delta = 0;
+  //tap_frame::bytes_t max_value = 0;
   for (int i = 0; i < p_frame_count; i++) {
-    tap_frame::bytes_t l_activation = tap_frame::channel_to_bytes(Math::abs(p_src_frames[i].left - last_activation.left));
-    tap_frame::bytes_t r_activation = tap_frame::channel_to_bytes(Math::abs(p_src_frames[i].right - last_activation.right));
-    if (l_activation >= activation_delta || r_activation >= activation_delta) {
+    tap_frame src_frame = tap_frame(p_src_frames[i]);
+    //max_delta = last_activation.delta(src_frame) > max_delta ? last_activation.delta(src_frame):max_delta;
+    //max_value = src_frame.left > max_value ? src_frame.left : max_value;
+    //max_value = src_frame.right > max_value ? src_frame.right : max_value;
+    if (last_activation.delta(src_frame) >= activation_delta) {
       circuit->queue.insert({component_id, tap_frame(p_src_frames[i]), total_time + i}, total_time + i);
       last_activation = tap_frame(p_src_frames[i]);
     }
   }
 
   circuit->set_last_frame_maximum(p_frame_count);
+
+  //print_line(vformat("Max delta for audio process step: %d", max_delta));
+  //print_line(vformat("Max VALUE for audio process step: %d", max_value));
 
   // Pass through audio unchanged
   for (int i = 0; i < p_frame_count; i++) {

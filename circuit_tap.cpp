@@ -34,3 +34,10 @@ int CircuitTap::get_last_frame_maximum() {
 void CircuitTap::set_last_frame_maximum(int p_maximum) {
   last_frame_maximum = p_maximum;
 }
+
+void CircuitTap::flush_statistics() {
+  last_frame_maximum = 0;
+  delta_avg = 0;
+  delta_min = 0;
+  delta_max = 0;
+}
