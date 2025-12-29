@@ -3,9 +3,9 @@
 #include "core/object/class_db.h"
 #include "servers/audio/audio_effect.h"
 #include "core/math/audio_frame.h"
+#include "core/math/vector2i.h"
 
 #include "circuit_tap.h"
-
 
 /*
 Be an instance of the AudioEffectTap, and maintain a reference to an event queue.
@@ -17,11 +17,11 @@ class AudioEffectTapInstance : public AudioEffectInstance {
 
   //parameters taken from effect resource
   Ref<CircuitTap> circuit;
-  float activation_delta;
+  tap_frame::bytes_t activation_delta = 1;
   tap_label_t component_id;
 
   //instance specific state
-  AudioFrame last_activation = {0.0, 0.0};
+  tap_frame last_activation;
   tap_time_t total_time = 0;
   
   public:
@@ -38,7 +38,7 @@ class AudioEffectTap : public AudioEffect {
   friend class AudioEffectTapInstance;
 
   Ref<CircuitTap> circuit;
-  float activation_delta = 0.0;
+  tap_frame::bytes_t activation_delta = 0;
   tap_label_t component_id = -1;
 
   protected:
@@ -47,8 +47,12 @@ class AudioEffectTap : public AudioEffect {
   public:
     virtual Ref<AudioEffectInstance> instantiate() override;
 
-    float get_activation_delta();
-    void set_activation_delta(float new_activation_delta);
+    tap_frame::bytes_t get_activation_delta();
+    void set_activation_delta(tap_frame::bytes_t new_activation_delta);
+
+    Ref<CircuitTap> get_circuit();
+    void set_circuit(Ref<CircuitTap> new_circuit);
+
 
     AudioEffectTap();
 };

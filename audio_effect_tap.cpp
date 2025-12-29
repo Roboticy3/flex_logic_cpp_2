@@ -8,10 +8,12 @@
 
 void AudioEffectTap::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_activation_delta"), &AudioEffectTap::get_activation_delta);
-  ClassDB::bind_method(D_METHOD("set_activation_delta", "activation_delta"), &AudioEffectTap::set_activation_delta);
+  ClassDB::bind_method(D_METHOD("set_activation_delta", "new_activation_delta"), &AudioEffectTap::set_activation_delta);
+  ClassDB::bind_method(D_METHOD("get_circuit"), &AudioEffectTap::get_circuit);
+  ClassDB::bind_method(D_METHOD("set_circuit", "new_circuit"), &AudioEffectTap::set_circuit);
 
-  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "frame_cache", PROPERTY_HINT_RESOURCE_TYPE, "FrameCache"), "set_frame_cache", "get_frame_cache");
-  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "activation_delta", PROPERTY_HINT_RANGE, "0.0,1.0"), "set_activation_delta", "get_activation_delta");
+  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "circuit", PROPERTY_HINT_RESOURCE_TYPE, "CircuitTap"), "set_circuit", "get_circuit");
+  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "activation_delta", PROPERTY_HINT_RANGE, "0,65535"), "set_activation_delta", "get_activation_delta");
 }
 
 Ref<AudioEffectInstance> AudioEffectTap::instantiate() {
@@ -23,6 +25,26 @@ Ref<AudioEffectInstance> AudioEffectTap::instantiate() {
   return instance;
 }
 
+tap_frame::bytes_t AudioEffectTap::get_activation_delta() {
+  return activation_delta;
+}
+
+void AudioEffectTap::set_activation_delta(tap_frame::bytes_t new_activation_delta) {
+  activation_delta = new_activation_delta;
+}
+
+Ref<CircuitTap> AudioEffectTap::get_circuit() {
+  return circuit;
+}
+
+void AudioEffectTap::set_circuit(Ref<CircuitTap> new_circuit) {
+  circuit = new_circuit;
+
+  if (circuit.is_null()) {
+    circuit.instantiate();
+  }
+}
+
 AudioEffectTap::AudioEffectTap() {
   Ref<CircuitTap> instance;
   instance.instantiate();
@@ -32,14 +54,15 @@ AudioEffectTap::AudioEffectTap() {
 void AudioEffectTapInstance::process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 
   for (int i = 0; i < p_frame_count; i++) {
-    float l_activation = Math::abs(p_src_frames[i].l - last_activation.l);
-    float r_activation = Math::abs(p_src_frames[i].r - last_activation.r);
+    tap_frame::bytes_t l_activation = tap_frame::channel_to_bytes(Math::abs(p_src_frames[i].left - last_activation.left));
+    tap_frame::bytes_t r_activation = tap_frame::channel_to_bytes(Math::abs(p_src_frames[i].right - last_activation.right));
     if (l_activation >= activation_delta || r_activation >= activation_delta) {
-      circuit->queue.insert({component_id, p_src_frames[i], total_time + i}, total_time + i);
-      last_activation = p_src_frames[i];
+      circuit->queue.insert({component_id, tap_frame(p_src_frames[i]), total_time + i}, total_time + i);
+      last_activation = tap_frame(p_src_frames[i]);
     }
-    
   }
+
+  circuit->set_last_frame_maximum(p_frame_count);
 
   // Pass through audio unchanged
   for (int i = 0; i < p_frame_count; i++) {

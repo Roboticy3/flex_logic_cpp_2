@@ -14,6 +14,13 @@ struct circuit_event_t {
   unsigned id;
   S state;
   T time;
+
+  inline constexpr bool operator<=(const circuit_event_t &other) const {
+    return time <= other.time;
+  }
+  inline constexpr bool operator<(const circuit_event_t &other) const {
+    return time < other.time;
+  }
 };
 
 template<typename S, typename T>
