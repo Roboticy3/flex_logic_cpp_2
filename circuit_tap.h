@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cmath>
+#include <cfloat>
+
 #include "core/object/class_db.h"
 #include "core/io/resource.h"
 #include "core/variant/variant.h"
@@ -19,9 +22,9 @@ struct tap_frame {
     };
   };
 
-  static inline constexpr bytes_t channel_to_bytes(float channel) {
-    // Map -1.0 to 1.0 to 0 to 65535
-    return static_cast<bytes_t>((channel + 1.0f) * 32767.5f);
+  static inline bytes_t channel_to_bytes(float channel) {
+    // Map -1.0 to 1.0 to 0 to 65535 with explicit quantization
+    return static_cast<bytes_t>(std::round((channel + 1.0f) * 32767.5f));
   }
 
   static inline constexpr float bytes_to_channel(bytes_t bytes) {
@@ -33,7 +36,7 @@ struct tap_frame {
     return a > b ? a - b : b - a;
   }
 
-  inline constexpr tap_frame(AudioFrame frame) :
+  inline tap_frame(AudioFrame frame) :
     left(channel_to_bytes(frame.left)), 
     right(channel_to_bytes(frame.right))
   {
