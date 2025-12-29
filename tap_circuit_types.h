@@ -72,6 +72,13 @@ struct tap_frame {
 
   }
 
+  inline tap_frame(Vector2i frame) :
+    left(static_cast<bytes_t>(frame.x)),
+    right(static_cast<bytes_t>(frame.y))
+  {
+
+  }
+
   inline constexpr tap_frame() :
     left(0),
     right(0)
@@ -91,6 +98,7 @@ struct tap_frame {
 typedef unsigned int tap_label_t;
 typedef unsigned int tap_time_t;
 typedef uint16_t tap_state_t;
-typedef circuit_queue_t<tap_frame, tap_time_t> tap_queue_t;
+typedef circuit_queue_t<tap_time_t, tap_label_t> tap_queue_t;
+typedef circuit_event_t<tap_time_t, tap_label_t> tap_event_t;
 typedef circuit_component_t<tap_frame, tap_time_t, tap_label_t, tap_label_t> tap_component_t;
-typedef circuit_event_t<tap_frame, tap_time_t> tap_event_t;
+typedef circuit_pin_t<tap_frame, tap_label_t> tap_pin_t;

@@ -13,7 +13,7 @@ void AudioEffectTap::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_circuit"), &AudioEffectTap::get_circuit);
   ClassDB::bind_method(D_METHOD("set_circuit", "new_circuit"), &AudioEffectTap::set_circuit);
 
-  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "circuit", PROPERTY_HINT_RESOURCE_TYPE, "CircuitTap"), "set_circuit", "get_circuit");
+  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "circuit", PROPERTY_HINT_RESOURCE_TYPE, "TapUser"), "set_circuit", "get_circuit");
   ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "activation_delta", PROPERTY_HINT_RANGE, "0,65535"), "set_activation_delta", "get_activation_delta");
 }
 
@@ -22,7 +22,7 @@ Ref<AudioEffectInstance> AudioEffectTap::instantiate() {
   instance.instantiate();
   instance->circuit = circuit;
   instance->activation_delta = activation_delta;
-  instance->component_id = component_id;
+  instance->pid = pid;
   return instance;
 }
 
@@ -46,11 +46,7 @@ void AudioEffectTap::set_circuit(Ref<TapUser> new_circuit) {
   }
 }
 
-AudioEffectTap::AudioEffectTap() {
-  Ref<TapUser> instance;
-  instance.instantiate();
-  circuit = instance;
-}
+AudioEffectTap::AudioEffectTap() {}
 
 void AudioEffectTapInstance::process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 
@@ -62,8 +58,8 @@ void AudioEffectTapInstance::process(const AudioFrame *p_src_frames, AudioFrame 
     //max_value = src_frame.left > max_value ? src_frame.left : max_value;
     //max_value = src_frame.right > max_value ? src_frame.right : max_value;
     if (last_activation.delta(src_frame) >= activation_delta) {
-      circuit->push_event_internal({component_id, tap_frame(p_src_frames[i]), total_time + i});
-      last_activation = tap_frame(p_src_frames[i]);
+      circuit->push_event_internal({total_time + i, pid}, src_frame);
+      last_activation = src_frame;
     }
   }
 

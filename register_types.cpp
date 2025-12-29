@@ -13,6 +13,7 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<FrameCache>();
 	ClassDB::register_class<TapUser>();
 	ClassDB::register_class<AudioEffectTap>();
+	ClassDB::register_class<AudioEffectTapInstance>();
 }
 
 void uninitialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {

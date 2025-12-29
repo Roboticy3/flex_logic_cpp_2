@@ -9,11 +9,10 @@
 #include "core/templates/vector.h"
 #include "core/templates/span.h"
 
-template<typename S, typename T>
+template<typename T, typename IDIn>
 struct circuit_event_t {
-  unsigned id;
-  S state;
   T time;
+  IDIn id;
 
   inline constexpr bool operator<=(const circuit_event_t &other) const {
     return time <= other.time;
@@ -23,12 +22,25 @@ struct circuit_event_t {
   }
 };
 
-template<typename S, typename T>
-using circuit_queue_t = hb_priority_queue_t<circuit_event_t<S, T>>;
+template<typename T, typename IDIn>
+using circuit_queue_t = hb_priority_queue_t<circuit_event_t<T, IDIn>>;
+
+template<typename S, typename IDOut>
+struct circuit_pin_t {
+  S state;
+  Span<IDOut> drivers;
+};
 
 template<typename S, typename T, typename IDOut, typename IDIn>
 struct circuit_component_t {
-  void(*solver)(Vector<S> inputs, int change, Span<IDOut> pins, circuit_queue_t<S, T> &queue);
+  /*
+  "create events from input connections and output connections by sampling full 
+  list of driver pins, then pushing events to a queue"
+
+  This should be enough to data to propogate events. The circuit solver reads 
+  circuit events on pins.
+  */
+  void(*solver)(const Span<IDIn> &inputs, const Span<IDOut> &outputs, const Vector<circuit_pin_t<S, IDIn>> &pins, circuit_queue_t<S, T> &output_queue);
   StringName name;
   Vector<IDIn> sensitive;
 };

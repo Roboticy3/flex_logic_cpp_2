@@ -19,7 +19,7 @@ class AudioEffectTapInstance : public AudioEffectInstance {
   //parameters taken from effect resource
   Ref<TapUser> circuit;
   tap_frame::bytes_t activation_delta;
-  tap_label_t component_id;
+  tap_label_t pid;
 
   //instance specific state
   tap_frame last_activation;
@@ -38,9 +38,9 @@ class AudioEffectTap : public AudioEffect {
 
   friend class AudioEffectTapInstance;
 
-  Ref<TapUser> circuit;
-  tap_frame::bytes_t activation_delta = 1;
-  tap_label_t component_id = -1;
+  Ref<TapUser> circuit; //circuit to send events to
+  tap_frame::bytes_t activation_delta = 1; //default to full sensitivity
+  tap_label_t pid = 0; //default to  the first pin
 
   protected:
     static void _bind_methods();
