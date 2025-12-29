@@ -6,6 +6,14 @@
 
 #include "core/math/audio_frame.h"
 
+/*
+Convert tapped audio channel signals to integer channels.
+
+The goal was to produce binary signals from the audio, but it's a little too
+unstable to do that directly. The reason probably has to do with innaccuracies
+in godot's audio playback. Might be good later to use wav files and a stream
+generator for finer control.
+*/
 struct tap_frame {
   using bytes_t = uint16_t;
 

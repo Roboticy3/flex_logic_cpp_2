@@ -34,10 +34,14 @@ std::optional<tap_event_t> TapUser::pop_event_internal() {
   return queue.pop_minimum().first;
 }
 
+void TapUser::push_event_internal(tap_event_t event) {
+  queue.insert(event, event.time);
+}
+
 int TapUser::get_sample_count() {
   return samples;
 }
 
-void TapUser::push_event_internal(tap_event_t event) {
-  queue.insert(event, event.time);
+void TapUser::set_sample_count_internal(int new_samples) {
+  samples = new_samples;
 }

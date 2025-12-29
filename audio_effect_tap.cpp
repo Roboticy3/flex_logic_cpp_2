@@ -62,12 +62,12 @@ void AudioEffectTapInstance::process(const AudioFrame *p_src_frames, AudioFrame 
     //max_value = src_frame.left > max_value ? src_frame.left : max_value;
     //max_value = src_frame.right > max_value ? src_frame.right : max_value;
     if (last_activation.delta(src_frame) >= activation_delta) {
-      circuit->push_event({component_id, tap_frame(p_src_frames[i]), total_time + i});
+      circuit->push_event_internal({component_id, tap_frame(p_src_frames[i]), total_time + i});
       last_activation = tap_frame(p_src_frames[i]);
     }
   }
 
-  circuit->samples = p_frame_count;
+  circuit->set_sample_count_internal(p_frame_count);
 
   //print_line(vformat("Max delta for audio process step: %d", max_delta));
   //print_line(vformat("Max VALUE for audio process step: %d", max_value));
