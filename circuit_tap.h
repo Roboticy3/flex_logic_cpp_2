@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cfloat>
+#include <optional>
 
 #include "core/object/class_db.h"
 #include "core/io/resource.h"
@@ -22,14 +23,41 @@ struct tap_frame {
     };
   };
 
+  //go from 2^0 (1.0 to -1.0) to 2^15 by adding an exponent as an unsigned int.
+  static constexpr uint32_t EXPONENT_ADD = 0x07800000; //15 in mantissa bits
+
+  //then, shift from 2^15 (32768 to -32768) to uint16_t range by adding an offset
+  static constexpr uint32_t FLOAT_ADD = 32768.0; //2^15 - 1 in float
+
+  //32-bit floating point should be accurate enough to retain all detail during
+  //  this process
   static inline bytes_t channel_to_bytes(float channel) {
     // Map -1.0 to 1.0 to 0 to 65535 with explicit quantization
-    return static_cast<bytes_t>(std::round((channel + 1.0f) * 32767.5f));
+
+    struct {
+      union {
+        float f;
+        uint32_t u;
+      };
+    } converter;
+    converter.f = channel;
+    converter.u += EXPONENT_ADD;
+    converter.f += FLOAT_ADD;
+    return static_cast<bytes_t>(converter.f);
   }
 
-  static inline constexpr float bytes_to_channel(bytes_t bytes) {
+  static inline float bytes_to_channel(bytes_t bytes) {
     // Map 0 to 65535 back to -1.0 to 1.0
-    return (static_cast<float>(bytes) / 32767.5f) - 1.0f;
+    struct {
+      union {
+        float f;
+        uint32_t b;
+      };
+    } converter;
+
+    converter.f = static_cast<float>(bytes) - FLOAT_ADD;
+    converter.b -= EXPONENT_ADD;
+    return converter.f;
   }
 
   static inline constexpr bytes_t bytes_diff(tap_frame::bytes_t a, tap_frame::bytes_t b) {
@@ -71,27 +99,25 @@ Store templates for circuit primitives that can be attached to an audio tap
 class CircuitTap : public Resource {
   GDCLASS(CircuitTap, Resource)
 
-  //processing statistics to display for testing
-  int last_frame_maximum = 0;
-  tap_frame::bytes_t delta_avg = 0;
-  tap_frame::bytes_t delta_max = 0;
-  tap_frame::bytes_t delta_min = 0;
-
   protected:
     static void _bind_methods();
 
   public:
 
+    //event queue
     tap_queue_t queue;
+
+    //number of samples made on the last event pass
+    int samples = 0;
+
+    //components for processing
     HashMap<tap_label_t, tap_component_t> components;
 
-    int get_frame_count();
-    Vector2i pop_next_frame();
+    int get_event_count();
+    Vector2i pop_event();
+    std::optional<circuit_event_t<tap_frame, tap_time_t>> pop_event_internal();
 
-    int get_last_frame_maximum();
-    void set_last_frame_maximum(int p_maximum);
-
-    void flush_statistics();
+    int get_sample_count();
     
     CircuitTap() = default;
 };

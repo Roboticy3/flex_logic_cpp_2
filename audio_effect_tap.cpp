@@ -66,7 +66,7 @@ void AudioEffectTapInstance::process(const AudioFrame *p_src_frames, AudioFrame 
     }
   }
 
-  circuit->set_last_frame_maximum(p_frame_count);
+  circuit->samples = p_frame_count;
 
   //print_line(vformat("Max delta for audio process step: %d", max_delta));
   //print_line(vformat("Max VALUE for audio process step: %d", max_value));

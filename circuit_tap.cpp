@@ -7,37 +7,32 @@
 #include "circuit_tap.h"
 
 void CircuitTap::_bind_methods() {
-  ClassDB::bind_method(D_METHOD("pop_next_frame"), &CircuitTap::pop_next_frame);
-  ClassDB::bind_method(D_METHOD("get_frame_count"), &CircuitTap::get_frame_count);
-  ClassDB::bind_method(D_METHOD("get_last_frame_maximum"), &CircuitTap::get_last_frame_maximum);
-  ClassDB::bind_method(D_METHOD("set_last_frame_maximum", "maximum"), &CircuitTap::set_last_frame_maximum);
-
-  ADD_PROPERTY(PropertyInfo(Variant::INT, "last_frame_maximum", PROPERTY_HINT_NONE), "set_last_frame_maximum", "get_last_frame_maximum");
+  ClassDB::bind_method(D_METHOD("get_event_count"), &CircuitTap::get_event_count);
+  ClassDB::bind_method(D_METHOD("pop_event"), &CircuitTap::pop_event);
+  ClassDB::bind_method(D_METHOD("get_sample_count"), &CircuitTap::get_sample_count);
 }
 
-Vector2i CircuitTap::pop_next_frame() {
-  if (queue.get_population() == 0) {
-    return Vector2i(0, 0);
-  }
-  tap_frame f = queue.pop_minimum().first.state;
-  return Vector2i(f.left, f.right);
-}
-
-int CircuitTap::get_frame_count() {
+int CircuitTap::get_event_count() {
   return queue.get_population();
 }
 
-int CircuitTap::get_last_frame_maximum() {
-  return last_frame_maximum;
+Vector2i CircuitTap::pop_event() {
+  auto o_event = pop_event_internal();
+  if (o_event.has_value()) {
+    circuit_event_t<tap_frame, tap_time_t> event = o_event.value();
+    return Vector2i(event.state.left, event.state.right);
+  }
+  
+  return Vector2i(2, 2);
 }
 
-void CircuitTap::set_last_frame_maximum(int p_maximum) {
-  last_frame_maximum = p_maximum;
+std::optional<circuit_event_t<tap_frame, tap_time_t>> CircuitTap::pop_event_internal() {
+  if (queue.is_empty()) {
+    return std::nullopt;
+  }
+  return queue.pop_minimum().first;
 }
 
-void CircuitTap::flush_statistics() {
-  last_frame_maximum = 0;
-  delta_avg = 0;
-  delta_min = 0;
-  delta_max = 0;
+int CircuitTap::get_sample_count() {
+  return samples;
 }
