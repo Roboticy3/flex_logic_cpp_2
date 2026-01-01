@@ -4,7 +4,7 @@
 #include "core/io/resource.h"
 
 #include "tap_circuit_types.h"
-#include "tap_user.h"
+#include "tap_patch_bay.h"
 
 /*
 Define a resource wrapper for tap_component_type_t, allowing the user to 

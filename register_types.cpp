@@ -1,7 +1,7 @@
 #include "core/object/class_db.h"
 
 #include "register_types.h"
-#include "tap_user.h"
+#include "tap_patch_bay.h"
 #include "audio_effect_tap.h"
 #include "tap_component_type.h"
 
@@ -10,7 +10,7 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 		return;
 	}
 
-	ClassDB::register_class<TapUser>();
+	ClassDB::register_class<TapPatchBay>();
 	ClassDB::register_class<TapComponentType>();
 	ClassDB::register_class<AudioEffectTap>();
 	ClassDB::register_class<AudioEffectTapInstance>();

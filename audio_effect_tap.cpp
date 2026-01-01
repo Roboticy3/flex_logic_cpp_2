@@ -5,7 +5,7 @@
 
 #include "audio_effect_tap.h"
 #include "tap_circuit_types.h"
-#include "tap_user.h"
+#include "tap_patch_bay.h"
 
 void AudioEffectTap::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_activation_delta"), &AudioEffectTap::get_activation_delta);
@@ -13,7 +13,7 @@ void AudioEffectTap::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_circuit"), &AudioEffectTap::get_circuit);
   ClassDB::bind_method(D_METHOD("set_circuit", "new_circuit"), &AudioEffectTap::set_circuit);
 
-  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "circuit", PROPERTY_HINT_RESOURCE_TYPE, "TapUser"), "set_circuit", "get_circuit");
+  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "circuit", PROPERTY_HINT_RESOURCE_TYPE, "TapPatchBay"), "set_circuit", "get_circuit");
   ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "activation_delta", PROPERTY_HINT_RANGE, "0,65535"), "set_activation_delta", "get_activation_delta");
 }
 
@@ -34,11 +34,11 @@ void AudioEffectTap::set_activation_delta(tap_frame::bytes_t new_activation_delt
   activation_delta = new_activation_delta;
 }
 
-Ref<TapUser> AudioEffectTap::get_circuit() {
+Ref<TapPatchBay> AudioEffectTap::get_circuit() {
   return circuit;
 }
 
-void AudioEffectTap::set_circuit(Ref<TapUser> new_circuit) {
+void AudioEffectTap::set_circuit(Ref<TapPatchBay> new_circuit) {
   circuit = new_circuit;
 
   if (circuit.is_null()) {

@@ -21,8 +21,8 @@ will be named *_internal.
 
 Queue is a protected member for easy access during simulation.
 */
-class TapUser : public Resource {
-  GDCLASS(TapUser, Resource)
+class TapPatchBay : public Resource {
+  GDCLASS(TapPatchBay, Resource)
 
   //number of samples made on the last event pass
   int samples = 0;
@@ -61,5 +61,5 @@ class TapUser : public Resource {
     void set_pin_state(tap_label_t label, Vector2i new_state);
     void set_pin_state_with_frame(tap_label_t label, Vector2 new_state);
     
-    TapUser() = default;
+    TapPatchBay() = default;
 };

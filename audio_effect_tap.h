@@ -5,7 +5,7 @@
 #include "core/math/audio_frame.h"
 #include "core/math/vector2i.h"
 
-#include "tap_user.h"
+#include "tap_patch_bay.h"
 #include "tap_circuit_types.h"
 
 /*
@@ -17,7 +17,7 @@ class AudioEffectTapInstance : public AudioEffectInstance {
   friend class AudioEffectTap;
 
   //parameters taken from effect resource
-  Ref<TapUser> circuit;
+  Ref<TapPatchBay> circuit;
   tap_frame::bytes_t activation_delta;
   tap_label_t pid;
 
@@ -38,7 +38,7 @@ class AudioEffectTap : public AudioEffect {
 
   friend class AudioEffectTapInstance;
 
-  Ref<TapUser> circuit; //circuit to send events to
+  Ref<TapPatchBay> circuit; //circuit to send events to
   tap_frame::bytes_t activation_delta = 1; //default to full sensitivity
   tap_label_t pid = 0; //default to  the first pin
 
@@ -51,8 +51,8 @@ class AudioEffectTap : public AudioEffect {
     tap_frame::bytes_t get_activation_delta();
     void set_activation_delta(tap_frame::bytes_t new_activation_delta);
 
-    Ref<TapUser> get_circuit();
-    void set_circuit(Ref<TapUser> new_circuit);
+    Ref<TapPatchBay> get_circuit();
+    void set_circuit(Ref<TapPatchBay> new_circuit);
 
 
     AudioEffectTap();
