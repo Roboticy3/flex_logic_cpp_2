@@ -47,7 +47,7 @@ class TapUser : public Resource {
     //if no events are available, returns (2,2)
     Vector2i pop_event();
     std::optional<tap_event_t> pop_event_internal();
-    void push_event_internal(tap_event_t event, tap_frame state);
+    void push_event_internal(tap_event_t event);
 
     int get_sample_count();
     void set_sample_count_internal(int new_samples);

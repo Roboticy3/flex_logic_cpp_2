@@ -9,10 +9,19 @@
 #include "core/templates/vector.h"
 #include "core/templates/span.h"
 
-template<typename T, typename IDIn>
+/*
+A singular event ona circuit, happening on a pin at a certain time with a 
+certain state. By collecting events, one can derive the entire current state of
+a component.
+
+Pins can also store events, making it possible to locate a component's drivers
+without storing an additional vector.
+*/
+template<typename S, typename T, typename PinID>
 struct circuit_event_t {
   T time;
-  IDIn id;
+  S state;
+  PinID pid;
 
   inline constexpr bool operator<=(const circuit_event_t &other) const {
     return time <= other.time;
@@ -22,25 +31,57 @@ struct circuit_event_t {
   }
 };
 
-template<typename T, typename IDIn>
-using circuit_queue_t = hb_priority_queue_t<circuit_event_t<T, IDIn>>;
+/*
+A priority queue of circuit events, implemented by harfbuzz :)
+*/
+template<typename S, typename T, typename PinID>
+using circuit_queue_t = hb_priority_queue_t<circuit_event_t<S, T, PinID>>;
 
-template<typename S, typename IDOut>
+/*
+A link between components in the circuit, along with the last event that passed
+through this point.
+*/
+template<typename S, typename T, typename ComponentID, typename PinID>
 struct circuit_pin_t {
-  S state;
-  Span<IDOut> drivers;
+  Vector<ComponentID> components;
+  circuit_event_t<S, T, PinID> last_event;
 };
 
-template<typename S, typename T, typename IDOut, typename IDIn>
+/*
+Define a component type in a circuit. The solver should be capable of processing 
+any component at any time based on its current state and push events to a
+destination queue.
+*/
+template<typename S, typename T, typename QueueT>
+struct circuit_component_type_t {
+  StringName name;
+  Vector<int> sensitive;
+  //state vector corresponds to sensitive pins
+  void(*solver)(const Vector<S> &state, QueueT &queue);
+};
+
+/*
+Define a component instance in a circuit. Has a type, which defines how to 
+handle the component's state. Components also connect to pins via `PinID`, and
+may contain an internal memory of type `S`- the same type as the state in the
+events that the component processes.
+
+`A` is the component type identifier, of which `circuit_component_type_t` is an
+example.
+*/
+template<typename S, typename PinID, typename A>
 struct circuit_component_t {
   /*
-  "create events from input connections and output connections by sampling full 
-  list of driver pins, then pushing events to a queue"
-
-  This should be enough to data to propogate events. The circuit solver reads 
-  circuit events on pins.
+  What is this component's name, pinout, and solver.
   */
-  void(*solver)(const Span<IDIn> &inputs, const Span<IDOut> &outputs, const Vector<circuit_pin_t<S, IDIn>> &pins, circuit_queue_t<S, T> &output_queue);
-  StringName name;
-  Vector<IDIn> sensitive;
+  A component_type;
+  /*
+  The pin ids connected to this component. Since pins store their last event,
+  this also defines the state.
+  */
+  Vector<PinID> pins;
+  /*
+  The component's internal memory.
+  */
+  Vector<S> memory; 
 };

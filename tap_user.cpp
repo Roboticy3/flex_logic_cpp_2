@@ -35,9 +35,9 @@ int TapUser::get_event_count() {
 
 Vector2i TapUser::pop_event() {
   auto o_event = pop_event_internal();
-  if (o_event.has_value() && pins.find(o_event->id) != pins.end()) {
+  if (o_event.has_value() && pins.find(o_event->pid) != pins.end()) {
     tap_event_t event = o_event.value();
-    tap_frame state = pins.get(event.id).state;
+    tap_frame state = pins.get(event.pid).last_event.state;
     return Vector2i(state.left, state.right);
   }
   
@@ -51,18 +51,7 @@ std::optional<tap_event_t> TapUser::pop_event_internal() {
   return queue.pop_minimum().first;
 }
 
-void TapUser::push_event_internal(tap_event_t event, tap_frame state) {
-  //if a pin does not exist, do not produce an event
-  if (pins.find(event.id) == pins.end()) {
-    print_error("Attempted to push event to nonexistant pin " + itos(event.id));
-    return;
-  //if the pin does exist, ensure its state is up to date
-  } else {
-    tap_pin_t &pin = pins.get(event.id);
-    pin.state = state;
-  }
-
-  //finally, if all went well, push the pin to the queue for processing.
+void TapUser::push_event_internal(tap_event_t event) {
   queue.insert(event, event.time);
 }
 
@@ -77,13 +66,13 @@ void TapUser::set_sample_count_internal(int new_samples) {
 void TapUser::add_pin(tap_label_t label, Vector2i initial_state) {
   tap_frame frame(initial_state);
   
-  pins.insert(label, tap_pin_t{frame, Span<tap_label_t>()});
+  pins.insert(label, tap_pin_t{Vector<tap_label_t>(), {0, frame}});
 }
 
 void TapUser::add_pin_with_frame(tap_label_t label, Vector2 initial_state) {
   tap_frame frame(AudioFrame(initial_state.x, initial_state.y));
   
-  pins.insert(label, tap_pin_t{frame, Span<tap_label_t>()});
+  pins.insert(label, tap_pin_t{Vector<tap_label_t>(), {0, frame}});
 }
 
 void TapUser::remove_pin(tap_label_t label) {
@@ -96,7 +85,7 @@ Vector2i TapUser::get_pin_state(tap_label_t label) {
     return STATE_MISSING;
   }
 
-  tap_frame state = pins.get(label).state;
+  tap_frame state = pins.get(label).last_event.state;
   return Vector2i(state.left, state.right);
 }
 
@@ -104,7 +93,7 @@ TypedDictionary<tap_label_t, Vector2i> TapUser::all_pin_states() {
   TypedDictionary<tap_label_t, Vector2i> dict;
   for (const auto &pair : pins) {
     tap_label_t label = pair.key;
-    tap_frame state = pair.value.state;
+    tap_frame state = pair.value.last_event.state;
     dict[label] = Vector2i(state.left, state.right);
   }
   return dict;
@@ -117,7 +106,7 @@ void TapUser::set_pin_state(tap_label_t label, Vector2i new_state) {
   }
 
   tap_frame frame(new_state);
-  pins.get(label).state = frame;
+  pins.get(label).last_event.state = frame;
 }
 
 void TapUser::set_pin_state_with_frame(tap_label_t label, Vector2 new_state) {
@@ -127,5 +116,5 @@ void TapUser::set_pin_state_with_frame(tap_label_t label, Vector2 new_state) {
   }
 
   tap_frame frame(AudioFrame(new_state.x, new_state.y));
-  pins.get(label).state = frame;
+  pins.get(label).last_event.state = frame;
 }
