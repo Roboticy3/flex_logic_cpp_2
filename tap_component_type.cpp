@@ -54,15 +54,15 @@ const tap_component_type_t &TapComponentType::get_component_type_internal() cons
 Prebuilt solvers go here. 
 */
 
-void adder_solver(const Vector<const tap_pin_t *> &pins, tap_queue_t &queue, tap_time_t current_time) {
+void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time) {
   // Example adder solver implementation
   if (pins.size() < 4) {
     return; // Not enough inputs
   }
 
   uint32_t result_carry[2] = {
-    (uint32_t)(pins[0]->last_event.state.left) + (uint32_t)(pins[1]->last_event.state.left),
-    (uint32_t)(pins[0]->last_event.state.right) + (uint32_t)(pins[1]->last_event.state.right),
+    (uint32_t)(pins[0]->state.left) + (uint32_t)(pins[1]->state.left),
+    (uint32_t)(pins[0]->state.right) + (uint32_t)(pins[1]->state.right),
   };
 
   //any overflow from 32-bit addition is caught here
@@ -82,8 +82,8 @@ void adder_solver(const Vector<const tap_pin_t *> &pins, tap_queue_t &queue, tap
   tap_time_t new_time = current_time;
 
   // Push result to queue with a dummy time and pin ID
-  queue.insert({new_time, result, pins[2]->id}, new_time);
-  queue.insert({new_time, carry, pins[3]->id}, new_time);
+  queue.insert({new_time, result, pins[2]->pid}, new_time);
+  queue.insert({new_time, carry, pins[3]->pid}, new_time);
 }
 
 void TapComponentType::initialize_solver_registry_internal() {

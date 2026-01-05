@@ -6,8 +6,9 @@
 #include "core/io/resource.h"
 #include "core/variant/variant.h"
 #include "core/variant/typed_dictionary.h"
-#include "core/templates/hash_map.h"
+#include "core/templates/vector.h"
 
+#include "labeling.h"
 #include "circuit.h"
 #include "tap_circuit_types.h"
 
@@ -34,7 +35,10 @@ class TapPatchBay : public Resource {
     tap_queue_t queue;
 
     //pin mapping
-    HashMap<tap_label_t, tap_pin_t> pins;
+    Labeling<tap_pin_t> pins;
+
+    //state mapping (keep separate from optional pins for easier access)
+    Vector<tap_event_t> pin_states;
 
   public:
 
@@ -52,9 +56,9 @@ class TapPatchBay : public Resource {
     int get_sample_count();
     void set_sample_count_internal(int new_samples);
 
-    void add_pin(tap_label_t label, Vector2i initial_state);
-    void add_pin_with_frame(tap_label_t label, Vector2 initial_state);
-    void remove_pin(tap_label_t label);
+    tap_label_t add_pin(Vector2i initial_state);
+    tap_label_t add_pin_with_frame(Vector2 initial_frame);
+    bool remove_pin(tap_label_t label);
 
     Vector2i get_pin_state(tap_label_t label);
     TypedDictionary<tap_label_t, Vector2i> all_pin_states();
