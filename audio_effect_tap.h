@@ -20,6 +20,8 @@ class AudioEffectTapInstance : public AudioEffectInstance {
   Ref<TapPatchBay> circuit;
   tap_frame::bytes_t activation_delta;
   tap_label_t pid;
+  int tick_rate = 1024; //number of simulation ticks per audio sample !TODO!
+  //make this property accessible.
 
   //instance specific state
   tap_frame last_activation;

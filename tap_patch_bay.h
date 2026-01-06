@@ -27,6 +27,7 @@ class TapPatchBay : public Resource {
 
   //number of samples made on the last event pass
   int samples = 0;
+  int tick_rate = 1024; //number of simulation ticks per audio sample
 
   protected:
     static void _bind_methods();
@@ -58,6 +59,7 @@ class TapPatchBay : public Resource {
 
     tap_label_t add_pin(Vector2i initial_state);
     tap_label_t add_pin_with_frame(Vector2 initial_frame);
+    bool has_pin(tap_label_t label);
     bool remove_pin(tap_label_t label);
 
     Vector2i get_pin_state(tap_label_t label);

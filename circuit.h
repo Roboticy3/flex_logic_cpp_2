@@ -51,6 +51,12 @@ struct circuit_pin_t {
 Define a component type in a circuit. The solver should be capable of processing 
 any component at any time based on its current state and push events to a
 destination queue.
+
+`name` : identifying name for this type
+`sensitive` : indices from 0 to `pin_count-1` where events should induce a call
+ to solver
+`pin_count` : number of pins this component has. If variable, set to 0.
+`solver` : function pointer to the solver function for this type
 */
 template<typename T, typename EventT, typename QueueT>
 struct circuit_component_type_t {
@@ -58,6 +64,7 @@ struct circuit_component_type_t {
 
   StringName name;
   Vector<int> sensitive;
+  int pin_count;
   //state vector corresponds to sensitive pins
   solver_t solver;
 };
@@ -83,7 +90,7 @@ struct circuit_component_t {
   */
   Vector<PinID> pins;
   /*
-  The component's internal memory.
+  The component's internal memory. Currently unused.
   */
   Vector<S> memory; 
 };

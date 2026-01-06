@@ -1,4 +1,3 @@
-
 #include "core/object/class_db.h"
 
 #include "tap_component_type.h"
@@ -14,8 +13,26 @@ void TapComponentType::_bind_methods() {
   ClassDB::bind_method(D_METHOD("set_sensitive_pins", "new_sensitive_pins"), &TapComponentType::set_sensitive_pins);
   ClassDB::bind_method(D_METHOD("get_sensitive_pins"), &TapComponentType::get_sensitive_pins);
 
+  ClassDB::bind_method(D_METHOD("set_pin_count", "new_pin_count"), &TapComponentType::set_pin_count);
+  ClassDB::bind_method(D_METHOD("get_pin_count"), &TapComponentType::get_pin_count);
+
   ClassDB::bind_method(D_METHOD("set_solver_function", "solver_name"), &TapComponentType::set_solver_function);
   ClassDB::bind_method(D_METHOD("get_solver_function_name"), &TapComponentType::get_solver_function_name);
+
+  //build the possible values for solver_function enum hint
+  String hint;
+  bool first = true;
+
+  for (auto const& [key, value] : solver_registry) {
+    if (!first) hint += ", ";
+    first = false;
+    hint += String(key);
+  }
+
+  ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "type_name"), "set_type_name", "get_type_name");
+  ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "sensitive_pins"), "set_sensitive_pins", "get_sensitive_pins");
+  ADD_PROPERTY(PropertyInfo(Variant::INT, "pin_count"), "set_pin_count", "get_pin_count");
+  ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "solver_function", PROPERTY_HINT_ENUM, hint), "set_solver_function", "get_solver_function_name");
 }
 
 void TapComponentType::set_type_name(StringName new_name) {
@@ -34,6 +51,14 @@ Vector<int> TapComponentType::get_sensitive_pins() {
   return component_type.sensitive;
 }
 
+void TapComponentType::set_pin_count(int new_pin_count) {
+  component_type.pin_count = new_pin_count;
+}
+
+int TapComponentType::get_pin_count() const {
+  return component_type.pin_count;
+}
+
 void TapComponentType::set_solver_function(StringName solver_name) {
   if (solver_registry.find(solver_name) == solver_registry.end()) {
     ERR_FAIL_MSG("Solver function not found in registry: " + String(solver_name));
@@ -46,13 +71,22 @@ StringName TapComponentType::get_solver_function_name() {
   return solver_function_name;
 }
 
-const tap_component_type_t &TapComponentType::get_component_type_internal() const {
+tap_component_type_t TapComponentType::get_component_type_internal() const {
   return component_type;
 }
 
 /*
 Prebuilt solvers go here. 
 */
+
+void wire_solver(const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time) {
+  for (int i = 0; i < state.size(); i++) {
+    tap_event_t event;
+    memcpy(&event, state[i], sizeof(tap_event_t));
+    event.time = current_time + 1; //wires have a delay of 1 tick
+    queue.insert(event, event.time);
+  }
+}
 
 void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time) {
   // Example adder solver implementation
@@ -89,6 +123,7 @@ void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, t
 void TapComponentType::initialize_solver_registry_internal() {
   TapComponentType::solver_registry.clear();
   TapComponentType::solver_registry.insert("adder", &adder_solver);
+  TapComponentType::solver_registry.insert("wire", &wire_solver);
   print_line(vformat("TapComponentType: Registered %d solver functions.", TapComponentType::solver_registry.size()));
 }
 

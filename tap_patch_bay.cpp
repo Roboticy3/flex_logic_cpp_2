@@ -18,6 +18,7 @@ void TapPatchBay::_bind_methods() {
 
   ClassDB::bind_method(D_METHOD("add_pin", "initial_state"), &TapPatchBay::add_pin);
   ClassDB::bind_method(D_METHOD("add_pin_with_frame", "initial_frame"), &TapPatchBay::add_pin_with_frame);
+  ClassDB::bind_method(D_METHOD("has_pin", "label"), &TapPatchBay::has_pin);
   ClassDB::bind_method(D_METHOD("remove_pin", "label"), &TapPatchBay::remove_pin);
 
   ClassDB::bind_method(D_METHOD("get_pin_state", "label"), &TapPatchBay::get_pin_state);
@@ -89,6 +90,10 @@ tap_label_t TapPatchBay::add_pin_with_frame(Vector2 initial_frame) {
   pin_states.set(result, tap_event_t{0, frame, result});
 
   return result;
+}
+
+bool TapPatchBay::has_pin(tap_label_t label) {
+  return pins.label_get(label).has_value();
 }
 
 bool TapPatchBay::remove_pin(tap_label_t label) {
