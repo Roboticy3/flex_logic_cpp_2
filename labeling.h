@@ -51,6 +51,19 @@ class Labeling : public Vector<std::optional<T>> {
       if (label < this->size()) {
         return this->operator[](label);
       }
+
       return std::nullopt;
+    }
+
+    T *label_get_mut(typename Vector<std::optional<T>>::Size label) {
+      if (label < this->size()) {
+        std::optional<T> &o_t = this->write[label];
+        if (o_t.has_value()) {
+          return &o_t.value();
+        } else {
+          return nullptr;
+        }
+      }
+      return nullptr;
     }
 };

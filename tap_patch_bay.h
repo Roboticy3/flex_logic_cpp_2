@@ -44,28 +44,33 @@ class TapPatchBay : public Resource {
   public:
 
     static constexpr Vector2i STATE_MISSING = Vector2i(2, 2);
-    inline Vector2i get_state_missing() {
+    inline Vector2i get_state_missing() const {
       return STATE_MISSING;
     }
 
-    int get_event_count();
+    int get_event_count() const;
     //if no events are available, returns (2,2)
     Vector2i pop_event();
     std::optional<tap_event_t> pop_event_internal();
     void push_event_internal(tap_event_t event);
 
-    int get_sample_count();
+    int get_sample_count() const;
     void set_sample_count_internal(int new_samples);
 
     tap_label_t add_pin(Vector2i initial_state);
     tap_label_t add_pin_with_frame(Vector2 initial_frame);
-    bool has_pin(tap_label_t label);
+    bool has_pin(tap_label_t label) const;
     bool remove_pin(tap_label_t label);
 
-    Vector2i get_pin_state(tap_label_t label);
-    TypedDictionary<tap_label_t, Vector2i> all_pin_states();
+    void attach_pins_internal(const Vector<tap_label_t> &labels, tap_label_t component_id);
+    void detach_pins_internal(const Vector<tap_label_t> &labels, tap_label_t component_id);
+
+    Vector2i get_pin_state(tap_label_t label) const;
+    TypedDictionary<tap_label_t, Vector2i> all_pin_states() const;
     void set_pin_state(tap_label_t label, Vector2i new_state);
     void set_pin_state_with_frame(tap_label_t label, Vector2 new_state);
+
+    TypedDictionary<tap_label_t, PackedInt64Array> get_all_pin_connections() const;
     
     TapPatchBay() = default;
 };

@@ -41,10 +41,9 @@ using circuit_queue_t = hb_priority_queue_t<circuit_event_t<S, T, PinID>>;
 A link between components in the circuit, along with the last event that passed
 through this point.
 */
-template<typename S, typename T, typename ComponentID, typename PinID>
+template<typename S, typename T, typename ComponentID>
 struct circuit_pin_t {
   Vector<ComponentID> components;
-  PinID id;
 };
 
 /*

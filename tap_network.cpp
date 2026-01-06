@@ -124,12 +124,12 @@ tap_component_t TapNetwork::validate_pin_labels_and_type(PackedInt64Array pin_la
     component.component_type = wire_component_type->get_component_type_internal();
   } else {
 
-    if (valid_labels.size() != component_type->get_component_type_internal().pin_count) {
+    if (valid_labels.size() != ct_internal.pin_count) {
       ERR_PRINT("TapNetwork::validate_pin_labels_and_type: pin count does not match component type.");
       return component;
     }
 
-    component.component_type = component_type->get_component_type_internal();
+    component.component_type = ct_internal;
   }
 
   component.pins = valid_labels;
@@ -145,17 +145,17 @@ tap_label_t TapNetwork::add_component(PackedInt64Array pin_labels, tap_label_t c
 
   tap_label_t label = components.label_add(component);
 
-  //!TODO! attach pins to the component
+  patch_bay->attach_pins_internal(component.pins, label);
 
   return label;
 }
 
 Ref<TapComponentType> TapNetwork::get_component_type(tap_label_t component_label) {
-  std::optional<tap_component_t> o_component = components.label_get(component_label);
-  if (!o_component.has_value()) {
+  tap_component_t *p_component = components.label_get_mut(component_label);
+  if (!p_component) {
     return Ref<TapComponentType>();
   }
-  tap_component_t component = o_component.value();
+  tap_component_t component = *p_component;
 
   for (int i = 0; i < component_types.size(); i++) {
     if (component_types[i].has_value() == false) {
@@ -175,32 +175,33 @@ Ref<TapComponentType> TapNetwork::get_component_type(tap_label_t component_label
   return Ref<TapComponentType>();
 }
 
-bool TapNetwork::move_component(tap_label_t component_label, PackedInt64Array new_pin_labels) {
-  std::optional<tap_component_t> o_component = components.label_get(component_label);
-  if (!o_component.has_value()) {
+bool TapNetwork::move_component(tap_label_t label, PackedInt64Array new_pin_labels) {
+  tap_component_t *p_component = components.label_get_mut(label);
+  if (!p_component) {
     return false;
   }
-  tap_component_t component = o_component.value();
+  tap_component_t component = *p_component;
 
   tap_component_t destination_component = validate_pin_labels_and_type(new_pin_labels, WIRE_TYPE);
   if (destination_component.pins.size() != component.pins.size()) {
     return false;
   }
 
-  //!TODO! detach old pins from component
+  patch_bay->detach_pins_internal(component.pins, label);
 
   //attach component to new pins
   component.pins = destination_component.pins;
 
-  //!TODO! attach new pins to component
+  patch_bay->attach_pins_internal(component.pins, label);
   return true;
 }
 
-bool TapNetwork::remove_component(tap_label_t component_label) {
-  bool result =components.label_remove(component_label);
+bool TapNetwork::remove_component(tap_label_t label) {
+  auto o_component = components.label_get(label);
+  bool result = components.label_remove(label);
   
   if (result) {
-    //!TODO! detach pins from component
+    patch_bay->detach_pins_internal(o_component.value().pins, label);
   }
 
   return result;

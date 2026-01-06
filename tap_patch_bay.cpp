@@ -1,4 +1,3 @@
-
 #include "core/object/class_db.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/typed_dictionary.h"
@@ -27,16 +26,18 @@ void TapPatchBay::_bind_methods() {
   ClassDB::bind_method(D_METHOD("set_pin_state", "label", "new_state"), &TapPatchBay::set_pin_state);
   ClassDB::bind_method(D_METHOD("set_pin_state_with_frame", "label", "new_state"), &TapPatchBay::set_pin_state_with_frame);
 
+  ClassDB::bind_method(D_METHOD("get_all_pin_connections"), &TapPatchBay::get_all_pin_connections);
+
   ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "state_missing"), "", "get_state_missing");
 }
 
-int TapPatchBay::get_event_count() {
+int TapPatchBay::get_event_count() const {
   return queue.get_population();
 }
 
 Vector2i TapPatchBay::pop_event() {
   auto o_event = pop_event_internal();
-  if (o_event.has_value() && pins.label_get(o_event->pid).has_value()) {
+  if (o_event.has_value() && pins.label_get_mut(o_event->pid)) {
     tap_event_t event = o_event.value();
     tap_frame state = pin_states[o_event->pid].state;
     return Vector2i(state.left, state.right);
@@ -56,7 +57,7 @@ void TapPatchBay::push_event_internal(tap_event_t event) {
   queue.insert(event, event.time);
 }
 
-int TapPatchBay::get_sample_count() {
+int TapPatchBay::get_sample_count() const {
   return samples;
 }
 
@@ -67,7 +68,9 @@ void TapPatchBay::set_sample_count_internal(int new_samples) {
 tap_label_t TapPatchBay::add_pin(Vector2i initial_state) {
   tap_frame frame(initial_state);
 
-  tap_label_t result = pins.label_add(tap_pin_t());
+  tap_pin_t new_pin;
+  new_pin.components = Vector<tap_label_t>(); // Initialize components
+  tap_label_t result = pins.label_add(new_pin);
 
   if (result >= pin_states.size()) {
     pin_states.resize(result + 1);
@@ -81,7 +84,9 @@ tap_label_t TapPatchBay::add_pin(Vector2i initial_state) {
 tap_label_t TapPatchBay::add_pin_with_frame(Vector2 initial_frame) {
   tap_frame frame(AudioFrame(initial_frame.x, initial_frame.y));
 
-  tap_label_t result = pins.label_add(tap_pin_t());
+  tap_pin_t new_pin;
+  new_pin.components = Vector<tap_label_t>(); // Initialize components
+  tap_label_t result = pins.label_add(new_pin);
 
   if (result >= pin_states.size()) {
     pin_states.resize(result + 1);
@@ -92,7 +97,7 @@ tap_label_t TapPatchBay::add_pin_with_frame(Vector2 initial_frame) {
   return result;
 }
 
-bool TapPatchBay::has_pin(tap_label_t label) {
+bool TapPatchBay::has_pin(tap_label_t label) const {
   return pins.label_get(label).has_value();
 }
 
@@ -106,7 +111,39 @@ bool TapPatchBay::remove_pin(tap_label_t label) {
   return result;
 }
 
-Vector2i TapPatchBay::get_pin_state(tap_label_t label) {
+void TapPatchBay::attach_pins_internal(const Vector<tap_label_t> &labels, tap_label_t component_id) {
+  for (auto label : labels) {
+    auto p_pin = pins.label_get_mut(label);
+    if (!p_pin) {
+      WARN_PRINT("Attempted to attach nonexistant pin " + itos(label));
+      continue;
+    }
+
+    if (p_pin->components.find(component_id) == -1) {
+      p_pin->components.push_back(component_id);
+    } else {
+      WARN_PRINT("Pin " + itos(label) + " already attached to component " + itos(component_id));
+    }
+  }
+}
+
+void TapPatchBay::detach_pins_internal(const Vector<tap_label_t> &labels, tap_label_t component_id) {
+  for (auto label : labels) {
+    auto p_pin = pins.label_get_mut(label);
+    if (!p_pin) {
+      WARN_PRINT("Attempted to detach nonexistant pin " + itos(label));
+      continue;
+    }
+
+    if (p_pin->components.find(component_id) == -1) {
+      WARN_PRINT("Pin " + itos(label) + " already detached from component " + itos(component_id));
+    } else {
+      p_pin->components.erase(p_pin->components.find(component_id));
+    }
+  }
+}
+
+Vector2i TapPatchBay::get_pin_state(tap_label_t label) const {
   if (pins[label].has_value() == false) {
     print_error("Attempted to get state of nonexistant pin " + itos(label));
     return STATE_MISSING;
@@ -116,7 +153,7 @@ Vector2i TapPatchBay::get_pin_state(tap_label_t label) {
   return Vector2i(state.left, state.right);
 }
 
-TypedDictionary<tap_label_t, Vector2i> TapPatchBay::all_pin_states() {
+TypedDictionary<tap_label_t, Vector2i> TapPatchBay::all_pin_states() const {
   TypedDictionary<tap_label_t, Vector2i> dict;
   for (tap_label_t i = 0; i < pins.size(); i++) {
     auto pin = pins[i];
@@ -130,7 +167,7 @@ TypedDictionary<tap_label_t, Vector2i> TapPatchBay::all_pin_states() {
 }
 
 void TapPatchBay::set_pin_state(tap_label_t label, Vector2i new_state) {
-  if (pins.label_get(label).has_value() == false) {
+  if (!pins.label_get_mut(label)) {
     print_error("Attempted to set state of nonexistant pin " + itos(label));
     return;
   }
@@ -140,11 +177,29 @@ void TapPatchBay::set_pin_state(tap_label_t label, Vector2i new_state) {
 }
 
 void TapPatchBay::set_pin_state_with_frame(tap_label_t label, Vector2 new_state) {
-  if (pins.label_get(label).has_value() == false) {
+  if (!pins.label_get_mut(label)) {
     print_error("Attempted to set state of nonexistant pin " + itos(label));
     return;
   }
 
   tap_frame frame(AudioFrame(new_state.x, new_state.y));
   pin_states.ptrw()[label].state = frame;
+}
+
+TypedDictionary<tap_label_t, PackedInt64Array> TapPatchBay::get_all_pin_connections() const {
+  TypedDictionary<tap_label_t, PackedInt64Array> dict;
+  for (int i = 0; i < pins.size(); i++) {
+    auto p_pin = pins[i];
+    if (!p_pin) {
+      continue;
+    }
+
+    PackedInt64Array p_connections;
+    for (auto comp_id : p_pin->components) {
+      p_connections.push_back(static_cast<int64_t>(comp_id));
+    }
+
+    dict[i] = p_connections;
+  }
+  return dict;
 }
