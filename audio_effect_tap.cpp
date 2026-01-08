@@ -50,6 +50,8 @@ AudioEffectTap::AudioEffectTap() {}
 
 void AudioEffectTapInstance::process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 
+  tap_queue_t &queue = circuit->get_queue_internal();
+
   //tap_frame::bytes_t max_delta = 0;
   //tap_frame::bytes_t max_value = 0;
   for (int i = 0; i < p_frame_count; i++) {
@@ -58,7 +60,8 @@ void AudioEffectTapInstance::process(const AudioFrame *p_src_frames, AudioFrame 
     //max_value = src_frame.left > max_value ? src_frame.left : max_value;
     //max_value = src_frame.right > max_value ? src_frame.right : max_value;
     if (last_activation.delta(src_frame) >= activation_delta) {
-      circuit->push_event_internal({total_time + i * tick_rate, src_frame, pid});
+      tap_time_t time = total_time + i * tick_rate;
+      queue.insert({time, src_frame, pid}, time);
       last_activation = src_frame;
     }
   }

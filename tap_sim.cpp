@@ -34,13 +34,18 @@ void TapSim::set_patch_bay(Ref<TapPatchBay> new_patch_bay) {
   patch_bay = new_patch_bay;
 }
 
-void TapSim::process_once() {
-  /*
-  tap_event_t next = patch_bay->pop_event_internal();
+void TapSim::process_once_internal(tap_queue_t &queue) {
+
+  if (queue.is_empty()) {
+    ERR_PRINT(String("Tried to process empty queue"));
+    return;
+  }
+  
+  tap_event_t next = queue.pop_minimum().first;
 
   //get the pin
   std::optional<tap_pin_t> pin = patch_bay->get_pin_internal(next.pid);
-  tap_event_t *state = patch_bay->get_pin_state_internal(next.pid);
+  tap_event_t *state = patch_bay->get_state_internal(next.pid);
 
   if (pin.has_value()) {
     ERR_PRINT(String("Propogated event on bad pin id ") + itos(next.pid));
@@ -53,21 +58,37 @@ void TapSim::process_once() {
   }
 
   //apply the new state
-
-  //check previous event is processed (processing still possible, warn only)
-  if (next.time < state.time) {
-    WARN_PRINT(String("Space-time continuum broken by ") + itos(state.time - next.time) + String(" seconds on pin ") + itos(next.pid));
-  }
+  *state = next;
 
   //propogate the event to the pin's connections
+  //the "sensitive" mechanic is handled in such a way that these components represent only the sensitive connections
   for (tap_label_t component_label : pin->components) {
-    tap_component_t *component = network->get_component_internal(component_label);
-    
-    //schizo-check. I think network interface covers this, but can't be too sure.
-    if (component == nullptr) {
-      WARN_PRINT(String("Pin ") + itos(next.pid) + String(" has connection to invalid component ") + itos(component_label));
+    std::optional<tap_component_t> component = network->get_component_internal(component_label);
+
+    //since components cannot be modified outisde of the interface, this should never happen
+    if (!component.has_value()) {
       continue;
     }
+
+    //get the input state for the component, 
+    Vector<const tap_event_t *> input;
+    input.reserve(component->pins.size());
+    for (tap_label_t pin : component->pins) {
+      input.push_back(patch_bay->get_state_internal(pin));
+    }
+
+    //solve the component
+    component->component_type.solver(input, queue, next.time);
   }
-  */
+  
+}
+
+void TapSim::process_once() {
+  if (patch_bay.is_null()) {
+    ERR_PRINT("TapSim::process_once: patch bay is not set. Cannot process events.");
+    return;
+  }
+
+  tap_queue_t &queue = patch_bay->get_queue_internal();
+  process_once_internal(queue);
 }

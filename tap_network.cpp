@@ -145,7 +145,7 @@ tap_label_t TapNetwork::add_component(PackedInt64Array pin_labels, tap_label_t c
 
   tap_label_t label = components.label_add(component);
 
-  patch_bay->attach_pins_internal(component.pins, label);
+  patch_bay->attach_pins_internal(component, label);
 
   return label;
 }
@@ -187,12 +187,12 @@ bool TapNetwork::move_component(tap_label_t label, PackedInt64Array new_pin_labe
     return false;
   }
 
-  patch_bay->detach_pins_internal(component.pins, label);
+  patch_bay->detach_pins_internal(component, label);
 
   //attach component to new pins
   component.pins = destination_component.pins;
 
-  patch_bay->attach_pins_internal(component.pins, label);
+  patch_bay->attach_pins_internal(component, label);
   return true;
 }
 
@@ -201,7 +201,7 @@ bool TapNetwork::remove_component(tap_label_t label) {
   bool result = components.label_remove(label);
   
   if (result) {
-    patch_bay->detach_pins_internal(o_component.value().pins, label);
+    patch_bay->detach_pins_internal(o_component.value(), label);
   }
 
   return result;

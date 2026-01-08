@@ -51,8 +51,7 @@ class TapPatchBay : public Resource {
     int get_event_count() const;
     //if no events are available, returns (2,2)
     Vector2i pop_event();
-    std::optional<tap_event_t> pop_event_internal();
-    void push_event_internal(tap_event_t event);
+    tap_queue_t &get_queue_internal();
 
     int get_sample_count() const;
     void set_sample_count_internal(int new_samples);
@@ -62,8 +61,12 @@ class TapPatchBay : public Resource {
     bool has_pin(tap_label_t label) const;
     bool remove_pin(tap_label_t label);
 
-    void attach_pins_internal(const Vector<tap_label_t> &labels, tap_label_t component_id);
-    void detach_pins_internal(const Vector<tap_label_t> &labels, tap_label_t component_id);
+    /*
+    Attach all sensitive pins of `component` with label `label` to the patch bay.
+    Assumes `component.pins` is filled.
+    */
+    void attach_pins_internal(const tap_component_t &component, tap_label_t label);
+    void detach_pins_internal(const tap_component_t &component, tap_label_t label);
 
     Vector2i get_pin_state(tap_label_t label) const;
     TypedDictionary<tap_label_t, Vector2i> all_pin_states() const;

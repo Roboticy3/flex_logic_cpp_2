@@ -30,5 +30,10 @@ class TapSim : public Node {
     /*
     Process the top event in the event queue.
     */
+    void process_once_internal(tap_queue_t &queue);
+    /*
+    Expose to the editor as automatically using patch_bay->get_queue_internal()
+    Useful for manual stepping in the editor.
+    */
     void process_once();
 };

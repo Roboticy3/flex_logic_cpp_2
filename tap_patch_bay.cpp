@@ -36,24 +36,21 @@ int TapPatchBay::get_event_count() const {
 }
 
 Vector2i TapPatchBay::pop_event() {
-  auto o_event = pop_event_internal();
-  if (o_event.has_value() && pins.label_get_mut(o_event->pid)) {
-    tap_frame state = o_event->state;
+  if (queue.is_empty()) {
+    return STATE_MISSING;
+  }
+
+  auto event = queue.pop_minimum().first;
+  if (pins.label_get_mut(event.pid)) {
+    tap_frame state = event.state;
     return Vector2i(state.left, state.right);
   }
   
   return STATE_MISSING;
 }
 
-std::optional<tap_event_t> TapPatchBay::pop_event_internal() {
-  if (queue.is_empty()) {
-    return std::nullopt;
-  }
-  return queue.pop_minimum().first;
-}
-
-void TapPatchBay::push_event_internal(tap_event_t event) {
-  queue.insert(event, event.time);
+tap_queue_t &TapPatchBay::get_queue_internal() {
+  return queue;
 }
 
 int TapPatchBay::get_sample_count() const {
@@ -110,8 +107,11 @@ bool TapPatchBay::remove_pin(tap_label_t label) {
   return result;
 }
 
-void TapPatchBay::attach_pins_internal(const Vector<tap_label_t> &labels, tap_label_t component_id) {
-  for (auto label : labels) {
+void TapPatchBay::attach_pins_internal(const tap_component_t &component, tap_label_t component_id) {
+  for (int label_indices : component.component_type.sensitive) {
+    //only operate on sensitive pins to avoid searching later
+    tap_label_t label = component.pins[label_indices];
+
     auto p_pin = pins.label_get_mut(label);
     if (!p_pin) {
       WARN_PRINT("Attempted to attach nonexistant pin " + itos(label));
@@ -126,18 +126,20 @@ void TapPatchBay::attach_pins_internal(const Vector<tap_label_t> &labels, tap_la
   }
 }
 
-void TapPatchBay::detach_pins_internal(const Vector<tap_label_t> &labels, tap_label_t component_id) {
-  for (auto label : labels) {
+void TapPatchBay::detach_pins_internal(const tap_component_t &component, tap_label_t component_label) {
+  for (int label_indices : component.component_type.sensitive) {
+    tap_label_t label = component.pins[label_indices];
+
     auto p_pin = pins.label_get_mut(label);
     if (!p_pin) {
       WARN_PRINT("Attempted to detach nonexistant pin " + itos(label));
       continue;
     }
 
-    if (p_pin->components.find(component_id) == -1) {
-      WARN_PRINT("Pin " + itos(label) + " already detached from component " + itos(component_id));
+    if (p_pin->components.find(component_label) == -1) {
+      WARN_PRINT("Pin " + itos(label) + " already detached from component " + itos(component_label));
     } else {
-      p_pin->components.erase(p_pin->components.find(component_id));
+      p_pin->components.erase(p_pin->components.find(component_label));
     }
   }
 }
