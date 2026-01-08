@@ -38,8 +38,7 @@ int TapPatchBay::get_event_count() const {
 Vector2i TapPatchBay::pop_event() {
   auto o_event = pop_event_internal();
   if (o_event.has_value() && pins.label_get_mut(o_event->pid)) {
-    tap_event_t event = o_event.value();
-    tap_frame state = pin_states[o_event->pid].state;
+    tap_frame state = o_event->state;
     return Vector2i(state.left, state.right);
   }
   
@@ -173,7 +172,7 @@ void TapPatchBay::set_pin_state(tap_label_t label, Vector2i new_state) {
   }
 
   tap_frame frame(new_state);
-  pin_states.ptrw()[label].state = frame;
+  get_state_internal(label)->state = frame;
 }
 
 void TapPatchBay::set_pin_state_with_frame(tap_label_t label, Vector2 new_state) {
@@ -183,7 +182,15 @@ void TapPatchBay::set_pin_state_with_frame(tap_label_t label, Vector2 new_state)
   }
 
   tap_frame frame(AudioFrame(new_state.x, new_state.y));
-  pin_states.ptrw()[label].state = frame;
+  get_state_internal(label)->state = frame;
+}
+
+std::optional<tap_pin_t> TapPatchBay::get_pin_internal(tap_label_t label) const {
+  return pins.label_get(label);
+}
+
+tap_event_t *TapPatchBay::get_state_internal(tap_label_t label) {
+  return &(pin_states.ptrw()[label]);
 }
 
 TypedDictionary<tap_label_t, PackedInt64Array> TapPatchBay::get_all_pin_connections() const {

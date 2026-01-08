@@ -79,10 +79,10 @@ tap_component_type_t TapComponentType::get_component_type_internal() const {
 Prebuilt solvers go here. 
 */
 
-void wire_solver(const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time) {
-  for (int i = 0; i < state.size(); i++) {
+void wire_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time) {
+  for (int i = 0; i < pins.size(); i++) {
     tap_event_t event;
-    memcpy(&event, state[i], sizeof(tap_event_t));
+    memcpy(&event, pins[i], sizeof(tap_event_t));
     event.time = current_time + 1; //wires have a delay of 1 tick
     queue.insert(event, event.time);
   }

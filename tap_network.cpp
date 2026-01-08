@@ -207,6 +207,10 @@ bool TapNetwork::remove_component(tap_label_t label) {
   return result;
 }
 
+std::optional<tap_component_t> TapNetwork::get_component_internal(tap_label_t component_label) const {
+  return components.label_get(component_label);
+}
+
 Array TapNetwork::get_all_component_connections() const {
   Array arr;
 

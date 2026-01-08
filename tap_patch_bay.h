@@ -29,17 +29,17 @@ class TapPatchBay : public Resource {
   int samples = 0;
   int tick_rate = 1024; //number of simulation ticks per audio sample
 
+  //event queue
+  tap_queue_t queue;
+
+  //pin mapping
+  Labeling<tap_pin_t> pins;
+
+  //state mapping (keep separate from optional pins for easier access)
+  Vector<tap_event_t> pin_states;
+
   protected:
     static void _bind_methods();
-
-    //event queue
-    tap_queue_t queue;
-
-    //pin mapping
-    Labeling<tap_pin_t> pins;
-
-    //state mapping (keep separate from optional pins for easier access)
-    Vector<tap_event_t> pin_states;
 
   public:
 
@@ -69,6 +69,12 @@ class TapPatchBay : public Resource {
     TypedDictionary<tap_label_t, Vector2i> all_pin_states() const;
     void set_pin_state(tap_label_t label, Vector2i new_state);
     void set_pin_state_with_frame(tap_label_t label, Vector2 new_state);
+
+    /*
+    Do not allow for external modification of pins.
+    */
+    std::optional<tap_pin_t> get_pin_internal(tap_label_t label) const;
+    tap_event_t *get_state_internal(tap_label_t label);
 
     TypedDictionary<tap_label_t, PackedInt64Array> get_all_pin_connections() const;
     

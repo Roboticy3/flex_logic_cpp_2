@@ -92,6 +92,8 @@ class TapNetwork : public Resource {
     */
     bool remove_component(tap_label_t component_label);
 
+    std::optional<tap_component_t> get_component_internal(tap_label_t component_label) const;
+
     /*
     Array of PackedInt64Array. Each entry corresponds to a component in the
     labeling. If the label is empty, the entry has no connections.
