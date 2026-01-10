@@ -77,12 +77,12 @@ events that the component processes.
 `A` is the component type identifier, of which `circuit_component_type_t` is an
 example.
 */
-template<typename S, typename PinID, typename A>
+template<typename S, typename T, typename PinID, typename EventT, typename QueueT>
 struct circuit_component_t {
   /*
   What is this component's name, pinout, and solver.
   */
-  A component_type;
+  circuit_component_type_t<T, EventT, QueueT> component_type;
   /*
   The pin ids connected to this component. Since pins store their last event,
   this also defines the state.
@@ -92,4 +92,17 @@ struct circuit_component_t {
   The component's internal memory. Currently unused.
   */
   Vector<S> memory; 
+
+  template<typename F, typename... X>
+  inline void for_each_sensitive(F&& func, X&&... varargs) const {
+    if (component_type.sensitive.is_empty()) {
+      for (int i = 0; i < pins.size(); i++) {
+        func(pins[i], std::forward<X>(varargs)...);
+      }
+    } else {
+      for (int i : component_type.sensitive) {
+        func(pins[i], std::forward<X>(varargs)...);
+      }
+    }
+  }
 };
