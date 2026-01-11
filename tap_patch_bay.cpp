@@ -108,8 +108,6 @@ bool TapPatchBay::remove_pin(tap_label_t label) {
 }
 
 void attach_pin_single(tap_label_t label, Labeling<tap_pin_t> &pins, tap_label_t component_id) {
-  print_line("Attaching pin " + itos(label) + " of component " + itos(component_id));
-
   auto p_pin = pins.label_get_mut(label);
   if (!p_pin) {
     WARN_PRINT("Attempted to attach nonexistant pin " + itos(label));

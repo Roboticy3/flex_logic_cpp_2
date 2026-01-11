@@ -55,6 +55,9 @@ class AudioEffectTap : public AudioEffect {
 
     Ref<TapPatchBay> get_circuit();
     void set_circuit(Ref<TapPatchBay> new_circuit);
+    
+    tap_label_t get_pid();
+    void set_pid(tap_label_t new_pid);
 
 
     AudioEffectTap();

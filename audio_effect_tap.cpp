@@ -12,9 +12,12 @@ void AudioEffectTap::_bind_methods() {
   ClassDB::bind_method(D_METHOD("set_activation_delta", "new_activation_delta"), &AudioEffectTap::set_activation_delta);
   ClassDB::bind_method(D_METHOD("get_circuit"), &AudioEffectTap::get_circuit);
   ClassDB::bind_method(D_METHOD("set_circuit", "new_circuit"), &AudioEffectTap::set_circuit);
+  ClassDB::bind_method(D_METHOD("get_pid"), &AudioEffectTap::get_pid);
+  ClassDB::bind_method(D_METHOD("set_pid", "new_pid"), &AudioEffectTap::set_pid);
 
   ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "circuit", PROPERTY_HINT_RESOURCE_TYPE, "TapPatchBay"), "set_circuit", "get_circuit");
   ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "activation_delta", PROPERTY_HINT_RANGE, "0,65535"), "set_activation_delta", "get_activation_delta");
+  ADD_PROPERTY(PropertyInfo(Variant::INT, "pid"), "set_pid", "get_pid");
 }
 
 Ref<AudioEffectInstance> AudioEffectTap::instantiate() {
@@ -44,6 +47,14 @@ void AudioEffectTap::set_circuit(Ref<TapPatchBay> new_circuit) {
   if (circuit.is_null()) {
     circuit.instantiate();
   }
+}
+
+tap_label_t AudioEffectTap::get_pid() {
+  return pid;
+}
+
+void AudioEffectTap::set_pid(tap_label_t new_pid) {
+  pid = new_pid;
 }
 
 AudioEffectTap::AudioEffectTap() {}
