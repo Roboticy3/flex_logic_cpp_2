@@ -107,31 +107,43 @@ Vector<tap_label_t> TapNetwork::validate_pin_labels(PackedInt64Array pin_labels)
 }
 
 tap_component_t TapNetwork::validate_pin_labels_and_type(PackedInt64Array pin_labels, tap_label_t component_type_index) const {
-  Vector<tap_label_t> valid_labels = validate_pin_labels(pin_labels);
 
   tap_component_t component;
 
-  auto component_type = component_types.label_get(component_type_index).value_or(Ref<TapComponentType>());
-  auto ct_internal = component_type.is_valid() ? component_type->get_component_type_internal() : tap_component_type_t();
+  //check that there is a wire type to default to
+  if (wire_component_type.is_null()) {
+    ERR_PRINT("TapNetwork::validate_pin_labels_and_type: wire component type is not set. Cannot validate component.");
+    return component;
+  }
 
-  //determine component type
+  //get the component type
+  auto o_component_type = component_types.label_get(component_type_index);
+  if (!o_component_type.has_value()) {
+    //invalid component type index
+    WARN_PRINT("TapNetwork::validate_pin_labels_and_type: invalid component type index " + itos(component_type_index) + ". Defaulting to wire type.");
+  }
+  Ref<TapComponentType> component_type = o_component_type.has_value() ? o_component_type.value() : Ref<TapComponentType>();
+
+  auto ct_internal = component_type.is_valid() ? component_type->get_component_type_internal() : wire_component_type->get_component_type_internal();
+
+  Vector<tap_label_t> valid_labels = validate_pin_labels(pin_labels);
+  
+  //error checks based on type and valid labels
   if (ct_internal.pin_count == 0) {
     //wire type
     if (valid_labels.size() == 0) {
       ERR_PRINT("TapNetwork::validate_pin_labels_and_type: wire components must have at least one pin.");
       return component;
     }
-    component.component_type = wire_component_type->get_component_type_internal();
   } else {
-
     if (valid_labels.size() != ct_internal.pin_count) {
       ERR_PRINT("TapNetwork::validate_pin_labels_and_type: pin count does not match component type.");
       return component;
     }
-
-    component.component_type = ct_internal;
   }
 
+  //only initialize if all checks pass. All 0 component will behave well under checks
+  component.component_type = ct_internal;
   component.pins = valid_labels;
   return component;
 }
