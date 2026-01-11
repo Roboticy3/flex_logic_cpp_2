@@ -80,11 +80,35 @@ Prebuilt solvers go here.
 */
 
 void wire_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time) {
+  //find the most recent activation
+  tap_event_t latest;
+  latest.time = (tap_time_t)(-1); //initialize to max value
   for (int i = 0; i < pins.size(); i++) {
-    tap_event_t event;
-    memcpy(&event, pins[i], sizeof(tap_event_t));
-    event.time = current_time + 1; //wires have a delay of 1 tick
-    queue.insert(event, event.time);
+    //we're not going to beat current_time because the solver runs on an event
+    //at current_time; any earlier event is thus "corrupted" or uninitialized,
+    //something which will be fixed by the current event. 
+    if (pins[i]->time == current_time) {
+      latest = *pins[i];
+      break;
+    }
+
+    if (pins[i]->time < latest.time && pins[i]->time > current_time) {
+      latest = *pins[i];
+    }
+  }
+
+  if (latest.time == (tap_time_t)(-1)) {
+    return; //no activations found
+  }
+
+  //propogate to all other pins
+  for (int i = 0; i < pins.size(); i++) {
+    if (pins[i]->pid == latest.pid) {
+      continue; //skip the source pin
+    }
+
+    //push to queue with a dummy time and pin ID
+    queue.insert({ latest.time, latest.state, pins[i]->pid }, latest.time);
   }
 }
 

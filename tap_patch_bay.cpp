@@ -199,8 +199,8 @@ tap_event_t *TapPatchBay::get_state_internal(tap_label_t label) {
 TypedDictionary<tap_label_t, PackedInt64Array> TapPatchBay::get_all_pin_connections() const {
   TypedDictionary<tap_label_t, PackedInt64Array> dict;
   for (int i = 0; i < pins.size(); i++) {
-    auto p_pin = pins[i];
-    if (!p_pin) {
+    auto p_pin = pins.label_get(i);
+    if (!p_pin.has_value()) {
       continue;
     }
 

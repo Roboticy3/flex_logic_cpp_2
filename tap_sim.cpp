@@ -47,7 +47,7 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
   std::optional<tap_pin_t> pin = patch_bay->get_pin_internal(next.pid);
   tap_event_t *state = patch_bay->get_state_internal(next.pid);
 
-  if (pin.has_value()) {
+  if (!pin.has_value()) {
     ERR_PRINT(String("Propogated event on bad pin id ") + itos(next.pid));
     return;
   }
@@ -58,7 +58,9 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
   }
 
   //apply the new state
-  *state = next;
+  //note mutation happens here in the event handler, not in solvers themselves
+  state->time = next.time;
+  state->state = next.state;
 
   //propogate the event to the pin's connections
   //the "sensitive" mechanic is handled in such a way that these components represent only the sensitive connections
@@ -69,6 +71,8 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
     if (!component.has_value()) {
       continue;
     }
+
+    print_line("Solving component " + itos(component_label) + " due to event on pin " + itos(next.pid));
 
     //get the input state for the component, 
     Vector<const tap_event_t *> input;
