@@ -38,6 +38,14 @@ struct tap_frame {
   static inline bytes_t channel_to_bytes(float channel) {
     // Map -1.0 to 1.0 to 0 to 65535 with explicit quantization
 
+    //limits don't convert well on their own (likely because exponent bits are weird?)
+    if (channel == 1.0) {
+      return -1; // 0xFF...F
+    }
+    else if (channel == -1.0) {
+      return 0; // 0x0
+    }
+
     struct {
       union {
         float f;
@@ -112,10 +120,10 @@ typedef unsigned int tap_time_t; //sample count time
 typedef uint16_t tap_state_t; //16-bit audio signal
 
 //event tap types
-typedef circuit_event_t<tap_frame, tap_time_t, tap_label_t> tap_event_t;
-typedef circuit_queue_t<tap_frame, tap_time_t, tap_label_t> tap_queue_t;
+typedef circuit_event_t<tap_frame, tap_time_t, tap_label_t, tap_label_t> tap_event_t;
+typedef circuit_queue_t<tap_frame, tap_time_t, tap_label_t, tap_label_t> tap_queue_t;
 
 //component tap types
 typedef circuit_pin_t<tap_frame, tap_time_t, tap_label_t> tap_pin_t;
-typedef circuit_component_type_t<tap_time_t, const tap_event_t *, tap_queue_t> tap_component_type_t;
-typedef circuit_component_t<tap_frame, tap_time_t, tap_label_t, const tap_event_t *, tap_queue_t> tap_component_t;
+typedef circuit_component_type_t<tap_time_t, tap_label_t, const tap_event_t *, tap_queue_t> tap_component_type_t;
+typedef circuit_component_t<tap_frame, tap_time_t, tap_label_t, tap_label_t, const tap_event_t *, tap_queue_t> tap_component_t;

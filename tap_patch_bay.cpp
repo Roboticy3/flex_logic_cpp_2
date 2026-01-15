@@ -40,7 +40,7 @@ void TapPatchBay::_bind_methods() {
 
 void TapPatchBay::push_event(tap_time_t time, Vector2 state, tap_state_t pid) {
   tap_frame frame(AudioFrame(state.x, state.y));
-  queue.insert({time, frame, pid}, time);
+  queue.insert({time, frame, pid, COMPONENT_MISSING}, time);
 }
 
 int TapPatchBay::get_event_count() const {
@@ -127,7 +127,7 @@ tap_label_t TapPatchBay::add_pin(Vector2i initial_state) {
     pin_states.resize(result + 1);
   }
 
-  pin_states.set(result, tap_event_t{0, frame, result});
+  pin_states.set(result, tap_event_t{0, frame, result, COMPONENT_MISSING});
 
   return result;
 }
@@ -143,7 +143,7 @@ tap_label_t TapPatchBay::add_pin_with_frame(Vector2 initial_frame) {
     pin_states.resize(result + 1);
   }
 
-  pin_states.set(result, tap_event_t{0, frame, result});
+  pin_states.set(result, tap_event_t{0, frame, result, COMPONENT_MISSING});
 
   return result;
 }

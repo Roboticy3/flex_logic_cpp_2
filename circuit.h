@@ -16,12 +16,18 @@ a component.
 
 Pins can also store events, making it possible to locate a component's drivers
 without storing an additional vector.
+
+The source component id must also be stored to avoid infinite loops. i.e. if a
+component sends an event to a pin, the solver needs to see that even and know
+not to "bounce" the event back into the same component.
 */
-template<typename S, typename T, typename PinID>
+template<typename S, typename T, typename PinID, typename ComponentID>
 struct circuit_event_t {
   T time;
   S state;
   PinID pid;
+  ComponentID source_cid;
+
 
   inline constexpr bool operator<=(const circuit_event_t &other) const {
     return time <= other.time;
@@ -34,8 +40,8 @@ struct circuit_event_t {
 /*
 A priority queue of circuit events, implemented by harfbuzz :)
 */
-template<typename S, typename T, typename PinID>
-using circuit_queue_t = hb_priority_queue_t<circuit_event_t<S, T, PinID>>;
+template<typename S, typename T, typename PinID, typename ComponentID>
+using circuit_queue_t = hb_priority_queue_t<circuit_event_t<S, T, PinID, ComponentID>>;
 
 /*
 A link between components in the circuit, along with the last event that passed
@@ -57,9 +63,9 @@ destination queue.
 `pin_count` : number of pins this component has. If variable, set to 0.
 `solver` : function pointer to the solver function for this type
 */
-template<typename T, typename EventT, typename QueueT>
+template<typename T, typename ComponentID, typename EventT, typename QueueT>
 struct circuit_component_type_t {
-  using solver_t = void(*)(const Vector<EventT> &state, QueueT &queue, T current_time);
+  using solver_t = void(*)(const Vector<EventT> &state, QueueT &queue, T current_time, ComponentID cid);
 
   StringName name;
   Vector<int> sensitive;
@@ -77,12 +83,12 @@ events that the component processes.
 `A` is the component type identifier, of which `circuit_component_type_t` is an
 example.
 */
-template<typename S, typename T, typename PinID, typename EventT, typename QueueT>
+template<typename S, typename T, typename PinID, typename ComponentID, typename EventT, typename QueueT>
 struct circuit_component_t {
   /*
   What is this component's name, pinout, and solver.
   */
-  circuit_component_type_t<T, EventT, QueueT> component_type;
+  circuit_component_type_t<T, ComponentID, EventT, QueueT> component_type;
   /*
   The pin ids connected to this component. Since pins store their last event,
   this also defines the state.

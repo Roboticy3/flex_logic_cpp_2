@@ -44,6 +44,8 @@ class TapPatchBay : public Resource {
 
   public:
 
+    static constexpr tap_label_t COMPONENT_MISSING = -1; //narrowing conversion my ass
+
     static constexpr Vector2i STATE_MISSING = Vector2i(2, 2);
     inline Vector2i get_state_missing() const {
       return STATE_MISSING;

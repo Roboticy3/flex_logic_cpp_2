@@ -83,7 +83,7 @@ tap_component_type_t TapComponentType::get_component_type_internal() const {
 Prebuilt solvers go here. 
 */
 
-void wire_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time) {
+void wire_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
   //find the most recent activation
   tap_event_t latest;
   latest.time = (tap_time_t)(-1); //initialize to max value
@@ -112,11 +112,11 @@ void wire_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, ta
     }
 
     //push to queue with a dummy time and pin ID
-    queue.insert({ latest.time + 1, latest.state, pins[i]->pid }, latest.time);
+    queue.insert({ latest.time + 1, latest.state, pins[i]->pid, cid}, latest.time);
   }
 }
 
-void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time) {
+void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
   // Example adder solver implementation
   if (pins.size() < 4) {
     return; // Not enough inputs
@@ -144,8 +144,8 @@ void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, t
   tap_time_t new_time = current_time;
 
   // Push result to queue with a dummy time and pin ID
-  queue.insert({new_time + 3, result, pins[2]->pid}, new_time);
-  queue.insert({new_time + 3, carry, pins[3]->pid}, new_time);
+  queue.insert({new_time + 3, result, pins[2]->pid, cid}, new_time);
+  queue.insert({new_time + 3, carry, pins[3]->pid, cid}, new_time);
 }
 
 void TapComponentType::initialize_solver_registry_internal() {

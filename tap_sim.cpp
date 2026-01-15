@@ -60,20 +60,23 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
 
   //apply the new state
   //note mutation happens here in the event handler, not in solvers themselves
-  state->time = next.time;
-  state->state = next.state;
+  *state = next;
 
   //propogate the event to the pin's connections
   //the "sensitive" mechanic is handled in such a way that these components represent only the sensitive connections
-  for (tap_label_t component_label : pin->components) {
-    std::optional<tap_component_t> component = network->get_component_internal(component_label);
+  for (tap_label_t cid : pin->components) {
+    if (cid == next.source_cid) {
+      continue;
+    }
+
+    std::optional<tap_component_t> component = network->get_component_internal(cid);
 
     //since components cannot be modified outisde of the interface, this should never happen
     if (!component.has_value()) {
       continue;
     }
 
-    print_line("Solving component " + itos(component_label) + " due to event on pin " + itos(next.pid));
+    print_line("Solving component " + itos(cid) + " due to event on pin " + itos(next.pid));
 
     //get the input state for the component, 
     Vector<const tap_event_t *> input;
@@ -83,7 +86,7 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
     }
 
     //solve the component
-    component->component_type.solver(input, queue, next.time);
+    component->component_type.solver(input, queue, next.time, cid);
   }
   
 }

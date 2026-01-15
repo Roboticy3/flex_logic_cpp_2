@@ -128,7 +128,7 @@ void AudioEffectTapInstance::process_line_in(const AudioFrame *p_src_frames, Aud
     //max_value = src_frame.right > max_value ? src_frame.right : max_value;
     if (last_activation.delta(src_frame) >= effect->activation_delta) {
       tap_time_t time = total_time + i * effect->tick_rate;
-      queue.insert({time, src_frame, effect->pid}, time);
+      queue.insert({time, src_frame, effect->pid, patch_bay->COMPONENT_MISSING}, time);
       last_activation = src_frame;
     }
   }
