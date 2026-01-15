@@ -5,7 +5,6 @@
 #include "tap_patch_bay.h"
 #include "tap_network.h"
 #include "tap_sim.h"
-#include "tap_sim_generator.h"
 #include "audio_effect_tap.h"
 
 void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
@@ -23,8 +22,6 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<TapNetwork>();
 	ClassDB::register_class<TapSim>();
 
-	ClassDB::register_class<TapSimGenerator>();
-	ClassDB::register_class<TapSimGeneratorPlayback>();
 	ClassDB::register_class<AudioEffectTap>();
 	ClassDB::register_class<AudioEffectTapInstance>();
 }

@@ -27,8 +27,6 @@ class TapComponentType : public Resource {
   };
   StringName solver_function_name = "wire";
 
-  static HashMap<StringName, tap_component_type_t::solver_t> solver_registry;
-
   protected:
     static void _bind_methods();
   
@@ -45,10 +43,14 @@ class TapComponentType : public Resource {
     void set_solver_function(StringName solver_name);
     StringName get_solver_function_name();
 
+    void set_component_type_internal(tap_component_type_t new_component_type);
     tap_component_type_t get_component_type_internal() const;
+  
     
     static void initialize_solver_registry_internal();
     static void uninitialize_solver_registry_internal();
+
+    static HashMap<StringName, tap_component_type_t::solver_t> solver_registry;
 
     TapComponentType() = default;
 };

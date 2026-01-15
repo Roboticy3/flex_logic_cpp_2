@@ -3,6 +3,7 @@
 #include "core/object/class_db.h"
 
 #include "tap_circuit_types.h"
+#include "tap_component_type.h"
 #include "tap_sim.h"
 
 void TapSim::_bind_methods() {
@@ -95,4 +96,15 @@ void TapSim::process_once() {
 
   tap_queue_t &queue = patch_bay->get_queue_internal();
   process_once_internal(queue);
+}
+
+TapSim::TapSim() {
+  network.instantiate();
+  patch_bay.instantiate();
+  
+  network->set_patch_bay(patch_bay);
+
+  Ref<TapComponentType> wire;
+  wire.instantiate();
+  network->set_wire_type(wire);
 }

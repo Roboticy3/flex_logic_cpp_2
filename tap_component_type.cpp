@@ -71,6 +71,10 @@ StringName TapComponentType::get_solver_function_name() {
   return solver_function_name;
 }
 
+void TapComponentType::set_component_type_internal(tap_component_type_t new_component_type) {
+  component_type = new_component_type;
+}
+
 tap_component_type_t TapComponentType::get_component_type_internal() const {
   return component_type;
 }

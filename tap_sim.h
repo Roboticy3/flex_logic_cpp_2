@@ -11,8 +11,8 @@
 Aggregate a TapNetwork and TapPatchBay to a full circuit. Resolve state manually
 or by giving to a TapSimAudioStreamGenerator
 */
-class TapSim : public Node {
-  GDCLASS(TapSim, Node);
+class TapSim : public Resource {
+  GDCLASS(TapSim, Resource);
 
   Ref<TapNetwork> network;
   Ref<TapPatchBay> patch_bay; //currently, network composes patch bay, but don't want to rely on that
@@ -36,4 +36,13 @@ class TapSim : public Node {
     Useful for manual stepping in the editor.
     */
     void process_once();
+
+    /*
+    Automatically set up a simulator with a minimally configured network + patch
+
+    Comes with:
+     - Populated network and patch bay
+     - Wire type for added components to default to
+    */
+    TapSim();
 };
