@@ -1,3 +1,5 @@
+#include <optional>
+
 #include "core/object/class_db.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/typed_dictionary.h"
@@ -12,7 +14,11 @@ void TapPatchBay::_bind_methods() {
   //register all methods not including those named *_internal
   ClassDB::bind_method(D_METHOD("get_state_missing"), &TapPatchBay::get_state_missing);
   ClassDB::bind_method(D_METHOD("get_event_count"), &TapPatchBay::get_event_count);
-  ClassDB::bind_method(D_METHOD("pop_event"), &TapPatchBay::pop_event);
+  ClassDB::bind_method(D_METHOD("pop_next_state"), &TapPatchBay::pop_next_state);
+
+  ClassDB::bind_method(D_METHOD("get_next_state"), &TapPatchBay::get_next_state);
+  ClassDB::bind_method(D_METHOD("get_next_pid"), &TapPatchBay::get_next_pid);
+  ClassDB::bind_method(D_METHOD("get_next_time"), &TapPatchBay::get_next_time);
   ClassDB::bind_method(D_METHOD("get_sample_count"), &TapPatchBay::get_sample_count);
 
   ClassDB::bind_method(D_METHOD("add_pin", "initial_state"), &TapPatchBay::add_pin);
@@ -35,19 +41,62 @@ int TapPatchBay::get_event_count() const {
   return queue.get_population();
 }
 
-Vector2i TapPatchBay::pop_event() {
+Vector2i TapPatchBay::pop_next_state() {
   if (queue.is_empty()) {
     return STATE_MISSING;
   }
 
   auto event = queue.pop_minimum().first;
-  if (pins.label_get_mut(event.pid)) {
+  if (pins.label_get(event.pid).has_value()) {
     tap_frame state = event.state;
     return Vector2i(state.left, state.right);
   }
   
   return STATE_MISSING;
 }
+
+std::optional<tap_event_t> TapPatchBay::get_next_event_internal() {
+  if (queue.is_empty()) {
+    return std::nullopt;
+  }
+
+  auto pair = queue.minimum();
+  if (pins.label_get(pair.first.pid).has_value()) {
+    return pair.first;
+  }
+  
+  return std::nullopt;
+}
+
+Vector2i TapPatchBay::get_next_state() {
+  auto o_event = get_next_event_internal();
+  if (o_event.has_value()) {
+    tap_frame state = o_event->state;
+    return Vector2i(state.left, state.right); 
+  }
+
+  return STATE_MISSING;
+}
+
+int TapPatchBay::get_next_pid() {
+  auto o_event = get_next_event_internal();
+  if (o_event.has_value()) {
+    return o_event->pid;
+  }
+
+  return -1;
+}
+
+int TapPatchBay::get_next_time() {
+  auto o_event = get_next_event_internal();
+  if (o_event.has_value()) {
+    return o_event->time;
+  }
+
+  return -1;
+}
+
+
 
 tap_queue_t &TapPatchBay::get_queue_internal() {
   return queue;

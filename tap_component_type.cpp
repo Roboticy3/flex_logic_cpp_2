@@ -112,7 +112,7 @@ void wire_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, ta
     }
 
     //push to queue with a dummy time and pin ID
-    queue.insert({ latest.time, latest.state, pins[i]->pid }, latest.time);
+    queue.insert({ latest.time + 1, latest.state, pins[i]->pid }, latest.time);
   }
 }
 
@@ -144,8 +144,8 @@ void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, t
   tap_time_t new_time = current_time;
 
   // Push result to queue with a dummy time and pin ID
-  queue.insert({new_time, result, pins[2]->pid}, new_time);
-  queue.insert({new_time, carry, pins[3]->pid}, new_time);
+  queue.insert({new_time + 3, result, pins[2]->pid}, new_time);
+  queue.insert({new_time + 3, carry, pins[3]->pid}, new_time);
 }
 
 void TapComponentType::initialize_solver_registry_internal() {

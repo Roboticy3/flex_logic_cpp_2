@@ -50,7 +50,13 @@ class TapPatchBay : public Resource {
 
     int get_event_count() const;
     //if no events are available, returns (2,2)
-    Vector2i pop_event();
+    Vector2i pop_next_state();
+    
+    std::optional<tap_event_t> get_next_event_internal();
+    Vector2i get_next_state();
+    int get_next_pid();
+    int get_next_time();
+
     tap_queue_t &get_queue_internal();
 
     int get_sample_count() const;
