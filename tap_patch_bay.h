@@ -7,6 +7,7 @@
 #include "core/variant/variant.h"
 #include "core/variant/typed_dictionary.h"
 #include "core/templates/vector.h"
+#include "core/error/error_list.h"
 
 #include "labeling.h"
 #include "circuit.h"
@@ -47,6 +48,8 @@ class TapPatchBay : public Resource {
     inline Vector2i get_state_missing() const {
       return STATE_MISSING;
     }
+
+    void push_event(tap_time_t time, Vector2 levels, tap_state_t pid);
 
     int get_event_count() const;
     //if no events are available, returns (2,2)

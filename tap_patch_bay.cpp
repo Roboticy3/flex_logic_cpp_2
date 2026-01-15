@@ -14,6 +14,7 @@ void TapPatchBay::_bind_methods() {
   //register all methods not including those named *_internal
   ClassDB::bind_method(D_METHOD("get_state_missing"), &TapPatchBay::get_state_missing);
   ClassDB::bind_method(D_METHOD("get_event_count"), &TapPatchBay::get_event_count);
+  ClassDB::bind_method(D_METHOD("push_event", "time", "state", "pid"), &TapPatchBay::push_event);
   ClassDB::bind_method(D_METHOD("pop_next_state"), &TapPatchBay::pop_next_state);
 
   ClassDB::bind_method(D_METHOD("get_next_state"), &TapPatchBay::get_next_state);
@@ -35,6 +36,11 @@ void TapPatchBay::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_all_pin_connections"), &TapPatchBay::get_all_pin_connections);
 
   ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "state_missing"), "", "get_state_missing");
+}
+
+void TapPatchBay::push_event(tap_time_t time, Vector2 state, tap_state_t pid) {
+  tap_frame frame(AudioFrame(state.x, state.y));
+  queue.insert({time, frame, pid}, time);
 }
 
 int TapPatchBay::get_event_count() const {
