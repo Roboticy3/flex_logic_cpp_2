@@ -4,6 +4,7 @@
 #include "core/io/resource.h"
 #include "core/templates/vector.h"
 #include "core/variant/array.h"
+#include "core/variant/typed_array.h"
 
 #include "labeling.h"
 #include "tap_circuit_types.h"
@@ -45,8 +46,8 @@ class TapNetwork : public Resource {
     void set_patch_bay(Ref<TapPatchBay> patch_bay);
     Ref<TapPatchBay> get_patch_bay() const;
 
-    void set_component_types(Array component_types);
-    Array get_component_types() const;
+    void set_component_types(TypedArray<TapComponentType> component_types);
+    TypedArray<TapComponentType> get_component_types() const;
 
     void set_wire_type(Ref<TapComponentType> wire_type);
     Ref<TapComponentType> get_wire_type() const;
@@ -103,5 +104,5 @@ class TapNetwork : public Resource {
     Array of tap_label_t describing the component types in the labeling. If the
     component at a label is empty, the entry is -1.
     */
-    Array get_all_component_types() const;
+    PackedInt64Array get_all_component_types() const;
 };

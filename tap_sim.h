@@ -28,12 +28,6 @@ class TapSim : public Resource {
     void set_patch_bay(Ref<TapPatchBay> new_patch_bay);
 
     /*
-    Process a single event on the circuit. Validates the target pin. Used as the 
-    kernel for all other process_* functions.
-    */
-    void process_event(tap_event_t event);
-
-    /*
     Process an event with a priority queue as the source. Pops the top event
     off of the queue.
     */

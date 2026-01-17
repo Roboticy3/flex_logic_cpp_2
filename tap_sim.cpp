@@ -35,8 +35,15 @@ void TapSim::set_patch_bay(Ref<TapPatchBay> new_patch_bay) {
   patch_bay = new_patch_bay;
 }
 
-void TapSim::process_event(tap_event_t event) {
+void TapSim::process_once_internal(tap_queue_t &queue) {
 
+  if (queue.is_empty()) {
+    ERR_PRINT(String("Tried to process empty queue"));
+    return;
+  }
+  
+  tap_event_t event = queue.pop_minimum().first;
+  
   //get the pin
   std::optional<tap_pin_t> pin = patch_bay->get_pin_internal(event.pid);
   tap_event_t *state = patch_bay->get_state_internal(event.pid);
@@ -83,17 +90,6 @@ void TapSim::process_event(tap_event_t event) {
   }
 }
 
-void TapSim::process_once_internal(tap_queue_t &queue) {
-
-  if (queue.is_empty()) {
-    ERR_PRINT(String("Tried to process empty queue"));
-    return;
-  }
-  
-  process_event(queue.pop_minimum().first);
-  
-}
-
 void TapSim::process_once() {
   if (patch_bay.is_null()) {
     ERR_PRINT("TapSim::process_once: patch bay is not set. Cannot process events.");
@@ -106,7 +102,7 @@ void TapSim::process_once() {
 
 void TapSim::process_to(tap_time_t end_time, tap_queue_t &queue) {
   while (!queue.is_empty() && queue.minimum().first.time <= end_time) {
-    process_event(queue.pop_minimum().first);
+    process_once_internal(queue);
   }
 }
 

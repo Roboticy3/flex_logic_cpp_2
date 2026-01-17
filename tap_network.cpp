@@ -42,26 +42,20 @@ Ref<TapPatchBay> TapNetwork::get_patch_bay() const {
   return patch_bay;
 }
 
-void TapNetwork::set_component_types(Array p_component_types) {
+void TapNetwork::set_component_types(TypedArray<TapComponentType> p_component_types) {
   component_types.clear();
   for (int i = 0; i < p_component_types.size(); i++) {
-    TapComponentType *ct = Object::cast_to<TapComponentType>(p_component_types[i]);
-    if (ct) {   
-      std::optional<Ref<TapComponentType>> o_type = Ref<TapComponentType>(ct);
-      component_types.push_back(o_type);
-    } else {
-      component_types.push_back(std::nullopt);
-    }
+    component_types.label_add(p_component_types[i]);
   }
 }
 
-Array TapNetwork::get_component_types() const {
-  Array arr;
+TypedArray<TapComponentType> TapNetwork::get_component_types() const {
+  TypedArray<TapComponentType> arr;
   for (int i = 0; i < component_types.size(); i++) {
     if (component_types[i].has_value()) 
       arr.push_back(component_types[i].value());
     else {
-      arr.push_back(Variant());
+      arr.push_back((const Object *)nullptr);
     }
   }
   return arr;
@@ -239,23 +233,24 @@ Array TapNetwork::get_all_component_connections() const {
   return arr;
 }
 
-Array TapNetwork::get_all_component_types() const {
-  Array arr;
+PackedInt64Array TapNetwork::get_all_component_types() const {
+  PackedInt64Array arr;
   for (auto o_component : components) {
     tap_label_t found_type = -1;
-    if (o_component.has_value()) {
-      tap_component_t component = o_component.value();
+    if (!o_component.has_value()) continue;
 
-      for (int i = 0; i < component_types.size(); i++) {
-        auto o_component_type = component_types.label_get(i);
-        if (o_component_type.has_value()) {
-          Ref<TapComponentType> component_type = o_component_type.value();
-          if (component_type->get_component_type_internal().name == component.component_type.name) {
-            
-            found_type = i;
-            break;
-          }
-        }
+    tap_component_t component = o_component.value();
+
+    for (int i = 0; i < component_types.size(); i++) {
+      auto o_component_type = component_types.label_get(i);
+      if (!o_component_type.has_value()) continue;
+      
+      Ref<TapComponentType> component_type = o_component_type.value();
+      if (component_type.is_null()) continue;
+      
+      if (component.component_type.name == component_type->get_type_name()) {
+        found_type = i;
+        break;
       }
     }
 
