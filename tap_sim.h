@@ -28,14 +28,29 @@ class TapSim : public Resource {
     void set_patch_bay(Ref<TapPatchBay> new_patch_bay);
 
     /*
-    Process the top event in the event queue.
+    Process a single event on the circuit. Validates the target pin. Used as the 
+    kernel for all other process_* functions.
+    */
+    void process_event(tap_event_t event);
+
+    /*
+    Process an event with a priority queue as the source. Pops the top event
+    off of the queue.
     */
     void process_once_internal(tap_queue_t &queue);
+
     /*
-    Expose to the editor as automatically using patch_bay->get_queue_internal()
-    Useful for manual stepping in the editor.
+    Process an event with the TapSim's configured `patch_bay` as the source for
+    a queue, and thus the next event. Since this does not take any internal
+    types as an argument, it can be exposed to the editor.
     */
     void process_once();
+
+    /*
+    Proper simulation function. As opposed to the traditional timestep, pass a 
+    total time target.
+    */
+    void process_to(tap_time_t end_time, tap_queue_t &queue);
 
     /*
     Automatically set up a simulator with a minimally configured network + patch

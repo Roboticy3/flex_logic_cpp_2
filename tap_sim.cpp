@@ -35,37 +35,30 @@ void TapSim::set_patch_bay(Ref<TapPatchBay> new_patch_bay) {
   patch_bay = new_patch_bay;
 }
 
-void TapSim::process_once_internal(tap_queue_t &queue) {
-
-  if (queue.is_empty()) {
-    ERR_PRINT(String("Tried to process empty queue"));
-    return;
-  }
-  
-  tap_event_t next = queue.pop_minimum().first;
+void TapSim::process_event(tap_event_t event) {
 
   //get the pin
-  std::optional<tap_pin_t> pin = patch_bay->get_pin_internal(next.pid);
-  tap_event_t *state = patch_bay->get_state_internal(next.pid);
+  std::optional<tap_pin_t> pin = patch_bay->get_pin_internal(event.pid);
+  tap_event_t *state = patch_bay->get_state_internal(event.pid);
 
   if (!pin.has_value()) {
-    ERR_PRINT(String("Propogated event on bad pin id ") + itos(next.pid));
+    ERR_PRINT(String("Propogated event on bad pin id ") + itos(event.pid));
     return;
   }
 
   if (state == nullptr) {
-    ERR_PRINT(String("State missing for pin ") + itos(next.pid));
+    ERR_PRINT(String("State missing for pin ") + itos(event.pid));
     return;
   }
 
   //apply the new state
   //note mutation happens here in the event handler, not in solvers themselves
-  *state = next;
+  *state = event;
 
   //propogate the event to the pin's connections
   //the "sensitive" mechanic is handled in such a way that these components represent only the sensitive connections
   for (tap_label_t cid : pin->components) {
-    if (cid == next.source_cid) {
+    if (cid == event.source_cid) {
       continue;
     }
 
@@ -76,7 +69,7 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
       continue;
     }
 
-    print_line("Solving component " + itos(cid) + " due to event on pin " + itos(next.pid));
+    print_line("Solving component " + itos(cid) + " due to event on pin " + itos(event.pid));
 
     //get the input state for the component, 
     Vector<const tap_event_t *> input;
@@ -86,8 +79,18 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
     }
 
     //solve the component
-    component->component_type.solver(input, queue, next.time, cid);
+    component->component_type.solver(input, queue, event.time, cid);
   }
+}
+
+void TapSim::process_once_internal(tap_queue_t &queue) {
+
+  if (queue.is_empty()) {
+    ERR_PRINT(String("Tried to process empty queue"));
+    return;
+  }
+  
+  process_event(queue.pop_minimum().first);
   
 }
 
@@ -99,6 +102,12 @@ void TapSim::process_once() {
 
   tap_queue_t &queue = patch_bay->get_queue_internal();
   process_once_internal(queue);
+}
+
+void TapSim::process_to(tap_time_t end_time, tap_queue_t &queue) {
+  while (!queue.is_empty() && queue.minimum().first.time <= end_time) {
+    process_event(queue.pop_minimum().first);
+  }
 }
 
 TapSim::TapSim() {

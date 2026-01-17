@@ -103,7 +103,8 @@ void AudioEffectTapInstance::process(const AudioFrame *p_src_frames, AudioFrame 
     process_line_in(p_src_frames, p_dst_frames, p_frame_count);
   }
 
-  //process TapSim
+  //process TapSim until the time passes by p_frame_count * tick_rate
+  tap_time_t total_time = effect->tick_rate * p_frame_count;
 
   if (effect->line_out) {
     //process output
