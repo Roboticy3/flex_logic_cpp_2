@@ -44,7 +44,7 @@ class TapSim : public Resource {
     Proper simulation function. As opposed to the traditional timestep, pass a 
     total time target.
     */
-    void process_to(tap_time_t end_time, tap_queue_t &queue);
+    void process_to(tap_time_t end_time);
 
     /*
     Automatically set up a simulator with a minimally configured network + patch

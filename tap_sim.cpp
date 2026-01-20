@@ -17,6 +17,7 @@ void TapSim::_bind_methods() {
   ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "patch_bay", PROPERTY_HINT_RESOURCE_TYPE, "TapPatchBay"), "set_patch_bay", "get_patch_bay");
 
   ClassDB::bind_method(D_METHOD("process_once"), &TapSim::process_once);
+  ClassDB::bind_method(D_METHOD("process_to"), &TapSim::process_to);
 }
 
 Ref<TapNetwork> TapSim::get_network() const {
@@ -100,7 +101,8 @@ void TapSim::process_once() {
   process_once_internal(queue);
 }
 
-void TapSim::process_to(tap_time_t end_time, tap_queue_t &queue) {
+void TapSim::process_to(tap_time_t end_time) {
+  tap_queue_t &queue = patch_bay->get_queue_internal();
   while (!queue.is_empty() && queue.minimum().first.time <= end_time) {
     process_once_internal(queue);
   }

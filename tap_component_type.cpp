@@ -24,7 +24,7 @@ void TapComponentType::_bind_methods() {
   bool first = true;
 
   for (auto const& [key, value] : solver_registry) {
-    if (!first) hint += ", ";
+    if (!first) hint += ",";
     first = false;
     hint += String(key);
   }
@@ -116,6 +116,10 @@ void wire_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, ta
   }
 }
 
+void none_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
+  // ¯\_(ツ)_/¯
+}
+
 void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
   // Example adder solver implementation
   if (pins.size() < 4) {
@@ -150,8 +154,9 @@ void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, t
 
 void TapComponentType::initialize_solver_registry_internal() {
   TapComponentType::solver_registry.clear();
-  TapComponentType::solver_registry.insert("adder", &adder_solver);
   TapComponentType::solver_registry.insert("wire", &wire_solver);
+  TapComponentType::solver_registry.insert("none", &none_solver);
+  TapComponentType::solver_registry.insert("adder", &adder_solver);
   print_line(vformat("TapComponentType: Registered %d solver functions.", TapComponentType::solver_registry.size()));
 }
 
