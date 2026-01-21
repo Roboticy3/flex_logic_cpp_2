@@ -41,32 +41,35 @@ PackedInt64Array AudioEffectTapOut::get_output_pids() const {
   return output_pids;
 }
 void AudioEffectTapOut::set_output_pids(PackedInt64Array new_output_pids) {
-  //assume nothing is valid if no patch bay exists to validate pids.
-  if (simulator.is_null() || simulator->get_patch_bay().is_null()) {
-    output_pids.clear();
-    return;
-  }
-
-  //use to validate pins
-  Ref<TapPatchBay> patch_bay = simulator->get_patch_bay();
-
-  output_pids.clear();
-  
-  for (int i = 0; i < new_output_pids.size(); ) {
-    auto pid = new_output_pids[i];
-    if (patch_bay->has_pin(pid)) {
-      output_pids.append(pid);
-    }
-  }
+  output_pids = new_output_pids;
 }
 
 bool AudioEffectTapOut::get_live() const {
   return live;
 }
 void AudioEffectTapOut::set_live(bool new_live) {
-  if (new_live && output_pids.is_empty()) {
-    ERR_PRINT("Cannot set live to true when output_pids is empty. Ensure output_pids points to valid pids in the simulator.");
-    return;
+  //validate pins before going live
+  //audio effects play in the editor, so pre-circuit construction effects will crash if I don't check here :(
+  if (new_live) {
+    if (simulator.is_null() || simulator->get_patch_bay().is_null()) {
+      ERR_PRINT(String("simulator AudioEffectTapOut::simulator does not have an instantiated patch bay, cannot go live. Try setting live to true at runtime, after constructing a circuit."));
+      live = false;
+      return;
+    }
+
+    if (output_pids.is_empty()) {
+      ERR_PRINT(String("output pids AudioEffectTapOut::output_pids are empty, cannot go live."));
+      live = false;
+      return;
+    }
+
+    for (auto pid : output_pids) {
+      if (!simulator->get_patch_bay()->has_pin(pid)) {
+        ERR_PRINT(String("output pid ") + itos(pid) + " does not exist yet in AudioEffectTapOut::simulator, cannot go live. Try setting live to true at runtime, after constructing a circuit.");
+        live = false;
+        return;
+      }
+    }
   }
 
   live = new_live;

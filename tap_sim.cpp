@@ -89,7 +89,7 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
       continue;
     }
 
-    print_line("Solving component " + itos(cid) + " due to event on pin " + itos(event.pid));
+    //print_line("Solving component " + itos(cid) + " due to event on pin " + itos(event.pid));
 
     //get the input state for the component, 
     Vector<const tap_event_t *> input;
