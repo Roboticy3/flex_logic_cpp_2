@@ -124,5 +124,5 @@ void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, Aud
     p_dst_frames[i] = total;
   }
 
-  total_time += p_frame_count * 1024;
+  total_time += p_frame_count * effect->simulator->get_tick_rate();
 }

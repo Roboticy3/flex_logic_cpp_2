@@ -115,14 +115,14 @@ void AudioEffectTapInInstance::process_line_in(const AudioFrame *p_src_frames, A
     //max_value = src_frame.left > max_value ? src_frame.left : max_value;
     //max_value = src_frame.right > max_value ? src_frame.right : max_value;
     if (last_activation.delta(src_frame) >= effect->activation_delta) {
-      tap_time_t time = total_time + i * 1024;
+      tap_time_t time = total_time + i * effect->simulator->get_tick_rate();
       queue.insert({time, src_frame, effect->pid, patch_bay->COMPONENT_MISSING}, time);
       last_activation = src_frame;
     }
   }
 
   patch_bay->set_sample_count_internal(p_frame_count);
-  total_time += p_frame_count * 1024;
+  total_time += p_frame_count * effect->simulator->get_tick_rate();
 
   //print_line(vformat("Max delta for audio process step: %d", max_delta));
   //print_line(vformat("Max VALUE for audio process step: %d", max_value));
