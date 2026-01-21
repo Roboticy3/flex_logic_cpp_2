@@ -16,7 +16,7 @@
  * @param last_activation Last event passed to `effect->simulator`
  * @param total_time Total time in simulation ticks since last `process` call.
  *  For frame `i` in a given process call, the timing on the event pushed to the
- *  circuit is `total_time + i * effect->tick_rate`.
+ *  circuit is `total_time + i * effect->simulator->tick_rate`.
  */
 class AudioEffectTapInInstance : public AudioEffectInstance {
   GDCLASS(AudioEffectTapInInstance, AudioEffectInstance);
@@ -44,17 +44,16 @@ class AudioEffectTapInInstance : public AudioEffectInstance {
 /**
  * @brief Referencing a TapSim and a single pin id for input, create an 
  * AudioEffectInstance to convert audio samples into events and push them into 
- * `simulator` with simulation time sample# * `tick_rate`.
+ * `simulator` with simulation time sample# * `simulator->tick_rate`.
  * 
- * @property simulator The target TapSim events are fed into
- * @property pid The target pin in `simulator` events are fed into
- * @property activation_delta The difference between samples in amplitude 
+ * @param simulator The target TapSim events are fed into
+ * @param pid The target pin in `simulator` events are fed into
+ * @param activation_delta The difference between samples in amplitude 
  *  constituting an "event". When set to 1 or lower, any change in audio level 
  *  is an event.
- * @property tick_rate The number of simulation time units between audio samples
- * @property line_in When false, samples are *not* passed to the simulator, as 
+ * @param line_in When false, samples are *not* passed to the simulator, as 
  *  if `activation_delta` were infinitely large.
- * @property line_out When true, samples caught by this effect are passed along
+ * @param line_out When true, samples caught by this effect are passed along
  *  the effect chain, when false, audio is silenced on the bus holding this
  *  effect.
  */
@@ -66,8 +65,6 @@ class AudioEffectTapIn : public AudioEffect {
   Ref<TapSim> simulator;
   tap_frame::bytes_t activation_delta = 1; 
   tap_label_t pid = 0; 
-
-  int tick_rate = 1024;
 
   bool line_in = true;
   bool line_out = false;
@@ -86,9 +83,6 @@ class AudioEffectTapIn : public AudioEffect {
     
     tap_label_t get_pid() const;
     void set_pid(tap_label_t new_pid);
-
-    int get_tick_rate() const;
-    void set_tick_rate(int new_tick_rate);
 
     bool get_line_in() const;
     void set_line_in(bool new_line_in);

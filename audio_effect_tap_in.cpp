@@ -19,9 +19,6 @@ void AudioEffectTapIn::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_pid"), &AudioEffectTapIn::get_pid);
   ClassDB::bind_method(D_METHOD("set_pid", "new_pid"), &AudioEffectTapIn::set_pid);
 
-  ClassDB::bind_method(D_METHOD("get_tick_rate"), &AudioEffectTapIn::get_tick_rate);
-  ClassDB::bind_method(D_METHOD("set_tick_rate", "new_tick_rate"), &AudioEffectTapIn::set_tick_rate);
-
   ClassDB::bind_method(D_METHOD("get_line_in"), &AudioEffectTapIn::get_line_in);
   ClassDB::bind_method(D_METHOD("set_line_in", "new_line_in"), &AudioEffectTapIn::set_line_in);
 
@@ -32,7 +29,6 @@ void AudioEffectTapIn::_bind_methods() {
   ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "activation_delta", PROPERTY_HINT_RANGE, "0,65535"), "set_activation_delta", "get_activation_delta");
   ADD_PROPERTY(PropertyInfo(Variant::INT, "pid"), "set_pid", "get_pid");
 
-  ADD_PROPERTY(PropertyInfo(Variant::INT, "tick_rate", PROPERTY_HINT_RANGE, "0,1024"), "set_tick_rate", "get_tick_rate");
   ADD_PROPERTY(PropertyInfo(Variant::BOOL, "line_in"), "set_line_in", "get_line_in");
   ADD_PROPERTY(PropertyInfo(Variant::BOOL, "line_out"), "set_line_out", "get_line_out");
 }
@@ -72,14 +68,6 @@ void AudioEffectTapIn::set_pid(tap_label_t new_pid) {
   pid = new_pid;
 }
 
-int AudioEffectTapIn::get_tick_rate() const {
-  return tick_rate;
-}
-
-void AudioEffectTapIn::set_tick_rate(int new_tick_rate) {
-  tick_rate = new_tick_rate;
-}
-
 bool AudioEffectTapIn::get_line_in() const {
   return line_in;
 }
@@ -103,7 +91,6 @@ AudioEffectTapIn::AudioEffectTapIn() {
 void AudioEffectTapInInstance::process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
   if (effect->line_in) {
     process_line_in(p_src_frames, p_dst_frames, p_frame_count);
-    total_time += p_frame_count * effect->tick_rate;
   }
 
   if (effect->line_out) {
@@ -128,14 +115,14 @@ void AudioEffectTapInInstance::process_line_in(const AudioFrame *p_src_frames, A
     //max_value = src_frame.left > max_value ? src_frame.left : max_value;
     //max_value = src_frame.right > max_value ? src_frame.right : max_value;
     if (last_activation.delta(src_frame) >= effect->activation_delta) {
-      tap_time_t time = total_time + i * effect->tick_rate;
+      tap_time_t time = total_time + i * 1024;
       queue.insert({time, src_frame, effect->pid, patch_bay->COMPONENT_MISSING}, time);
       last_activation = src_frame;
     }
   }
 
   patch_bay->set_sample_count_internal(p_frame_count);
-  total_time += p_frame_count * effect->tick_rate;
+  total_time += p_frame_count * 1024;
 
   //print_line(vformat("Max delta for audio process step: %d", max_delta));
   //print_line(vformat("Max VALUE for audio process step: %d", max_value));
