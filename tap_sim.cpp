@@ -115,9 +115,13 @@ void TapSim::process_once() {
 
 void TapSim::process_to(tap_time_t end_time) {
   tap_queue_t &queue = patch_bay->get_queue_internal();
+  int count = 0;
   while (!queue.is_empty() && queue.minimum().first.time <= end_time) {
     process_once_internal(queue);
+    count++;
   }
+
+  print_line("processed ", count, " events;");
 }
 
 TapSim::TapSim() {

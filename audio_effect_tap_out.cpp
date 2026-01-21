@@ -1,3 +1,4 @@
+
 #include "audio_effect_tap_out.h"
 
 void AudioEffectTapOut::_bind_methods() {
@@ -108,21 +109,20 @@ bool AudioEffectTapOutInstance::process_silence() const {
 }
 
 void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
+  
   //simulate the circuit
   //technically simulating behind by one `process` call because `total_time` 
   //  isn't updated yet. But if this instance is synced properly with the input
   //  instances, that's the only way to stop it from trying to read events that
   //  don't exist yet. Should cause a negligible delay.
-  for (int i = 0; i < p_frame_count; i += effect->sample_skip) {
-    effect->simulator->process_to(total_time);
-  }  
-
-  //sum over the outputs. Not sure what to do about normalization right now.
   Ref<TapPatchBay> patch_bay = effect->simulator->get_patch_bay();
   for (int i = 0; i < p_frame_count; i += effect->sample_skip) {
+    effect->simulator->process_to(total_time + i * effect->simulator->get_tick_rate());
+
     AudioFrame total;
     for (tap_label_t pid : effect->output_pids) {
-      total += patch_bay->get_pin_frame(pid);
+      AudioFrame pid_frame = patch_bay->get_pin_frame(pid);
+      total += pid_frame;
     }
     p_dst_frames[i] = total;
   }
