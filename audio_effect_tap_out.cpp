@@ -17,7 +17,7 @@ void AudioEffectTapOut::_bind_methods() {
 
   ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
   ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "output_pids"), "set_output_pids", "get_output_pids");
-  ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live"), "get_live", "set_live");
+  ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live"), "set_live", "get_live");
   ADD_PROPERTY(PropertyInfo(Variant::INT, "sample_skip", PROPERTY_HINT_ENUM_SUGGESTION, "1,2,4"), "set_sample_skip", "get_sample_skip");
 }
 
