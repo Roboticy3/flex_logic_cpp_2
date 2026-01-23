@@ -1,8 +1,4 @@
-#include "core/templates/hash_map.h"
-#include "core/templates/vector.h"
-
 #include "audio_effect_tap_out.h"
-#include "audio_analyzer.h"
 
 void AudioEffectTapOut::_bind_methods() {
   ClassDB::bind_method(D_METHOD("any_input_connected"), &AudioEffectTapOut::any_input_connected);
@@ -86,9 +82,6 @@ bool AudioEffectTapOutInstance::process_silence() const {
 }
 
 void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
-  
-  AudioAnalyzer analyzer;
-  HashMap<tap_label_t, Vector<AudioFrame>> pid_readouts;
 
   //simulate the circuit
   //technically simulating behind by one `process` call because `total_time` 
@@ -102,18 +95,10 @@ void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, Aud
     AudioFrame total;
     for (tap_label_t pid : effect->ls.get_live_pids()) {
       AudioFrame pid_frame = patch_bay->get_pin_frame(pid);
-
-      pid_readouts[pid] = Vector<AudioFrame>();
-      pid_readouts[pid].append(pid_frame);
       
       total += pid_frame;
     }
     p_dst_frames[i] = total;
-  }
-
-  for (auto pair : pid_readouts) {
-    AudioAnalyzer::statistics_t stats = analyzer.stats(pair.value);
-    print_line(pair.key, ": (", stats.mean.left, ", ", stats.mean.right, ") | (", stats.stddev.left, ", ", stats.stddev.right, ")");
   }
 
   total_time += p_frame_count * effect->ls.get_simulator()->get_tick_rate();
