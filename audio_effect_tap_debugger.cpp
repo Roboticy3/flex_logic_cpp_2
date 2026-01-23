@@ -98,7 +98,9 @@ TypedArray<PackedVector2Array> AudioEffectTapDebugger::get_samples() const {
       Vector<AudioFrame> frames = samples.get(pid);
       
       pid_result.resize(frames.size());
-      memcpy(pid_result.ptrw(), frames.ptr(), frames.size() * sizeof(AudioFrame));
+      for (int i = 0; i < frames.size(); i++) {
+        pid_result.set(i, frames[i]);
+      }
     }
     result.push_back(pid_result);
   }
@@ -130,8 +132,8 @@ Ref<AudioEffectTapDebuggerQuery> AudioEffectTapDebugger::get_stats() const {
     Vector2 variance(0, 0);
     
     if (!samples.has(pid)) {
-      means.set(i, mean);
-      stddevs.set(i, Vector2(0, 0));
+      means.set(i, Vector2(NAN, NAN));
+      stddevs.set(i, Vector2(NAN, NAN));
       continue;
     }
 
@@ -202,15 +204,17 @@ void AudioEffectTapDebuggerInstance::process_live(const AudioFrame *p_src_frames
   
   for (tap_label_t pid : effect->get_monitor_pids()) {
     if (!effect->samples.has(pid)) {
-      //originally i wanted to do a ring buffer, but the builtin class' interface is too hard lol
-      while (effect->samples.get(pid).size() >= effect->sample_count) {
-        effect->samples.get(pid).remove_at(0);
-      }
-      
       effect->samples.insert(pid, Vector<AudioFrame>());
     }
 
+    //originally i wanted to do a ring buffer, but the builtin class' interface is too hard lol
+    while (effect->samples.get(pid).size() >= effect->sample_count) {
+      effect->samples.get(pid).remove_at(0);
+    }
+
     effect->samples.get(pid).push_back(p_src_frames[p_frame_count - 1]);
+
+    //print_line("pid ", pid, " has ", p_src_frames[p_frame_count - 1].left, ", ", p_src_frames[p_frame_count - 1].right, " values");
   }
   
   // Update total time
