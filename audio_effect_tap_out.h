@@ -8,6 +8,7 @@
 
 #include "tap_circuit_types.h"
 #include "tap_sim.h"
+#include "tap_sim_live_switch.h"
 
 class AudioEffectTapOutInstance : public AudioEffectInstance {
   GDCLASS(AudioEffectTapOutInstance, AudioEffectInstance)
@@ -41,10 +42,8 @@ class AudioEffectTapOut : public AudioEffect {
 
   friend class AudioEffectTapOutInstance;
 
-  Ref<TapSim> simulator;
-  PackedInt64Array output_pids;
+  TapSimLiveSwitch ls;
 
-  bool live = false;
   int sample_skip = 2;
 
   protected:

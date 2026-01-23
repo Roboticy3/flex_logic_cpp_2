@@ -1,5 +1,8 @@
+#include "core/templates/hash_map.h"
+#include "core/templates/vector.h"
 
 #include "audio_effect_tap_out.h"
+#include "audio_analyzer.h"
 
 void AudioEffectTapOut::_bind_methods() {
   ClassDB::bind_method(D_METHOD("any_input_connected"), &AudioEffectTapOut::any_input_connected);
@@ -27,53 +30,27 @@ bool AudioEffectTapOut::any_input_connected(PackedInt64Array input_pids) {
 }
 
 Ref<TapSim> AudioEffectTapOut::get_simulator() const {
-  return simulator;
+  return ls.get_simulator();
 }
-void AudioEffectTapOut::set_simulator(Ref<TapSim> new_simulator) {
-  simulator = new_simulator;
 
-  //invalidate the simulation.
-  //not sure if this will validate properly in the editor.
-  live = false;
-  output_pids.clear();
+void AudioEffectTapOut::set_simulator(Ref<TapSim> new_simulator) {
+  ls.set_simulator(new_simulator);
 }
 
 PackedInt64Array AudioEffectTapOut::get_output_pids() const {
-  return output_pids;
+  return ls.get_live_pids();
 }
+
 void AudioEffectTapOut::set_output_pids(PackedInt64Array new_output_pids) {
-  output_pids = new_output_pids;
+  ls.set_live_pids(new_output_pids);
 }
 
 bool AudioEffectTapOut::get_live() const {
-  return live;
+  return ls.get_live();
 }
+
 void AudioEffectTapOut::set_live(bool new_live) {
-  //validate pins before going live
-  //audio effects play in the editor, so pre-circuit construction effects will crash if I don't check here :(
-  if (new_live) {
-    if (simulator.is_null() || simulator->get_patch_bay().is_null()) {
-      ERR_PRINT(String("simulator AudioEffectTapOut::simulator does not have an instantiated patch bay, cannot go live. Try setting live to true at runtime, after constructing a circuit."));
-      live = false;
-      return;
-    }
-
-    if (output_pids.is_empty()) {
-      ERR_PRINT(String("output pids AudioEffectTapOut::output_pids are empty, cannot go live."));
-      live = false;
-      return;
-    }
-
-    for (auto pid : output_pids) {
-      if (!simulator->get_patch_bay()->has_pin(pid)) {
-        ERR_PRINT(String("output pid ") + itos(pid) + " does not exist yet in AudioEffectTapOut::simulator, cannot go live. Try setting live to true at runtime, after constructing a circuit.");
-        live = false;
-        return;
-      }
-    }
-  }
-
-  live = new_live;
+  ls.set_live(new_live);
 }
 
 int AudioEffectTapOut::get_sample_skip() const {
@@ -99,7 +76,7 @@ Ref<AudioEffectInstance> AudioEffectTapOut::instantiate() {
 }
 
 void AudioEffectTapOutInstance::process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
-  if (effect->live) {
+  if (effect->ls.get_live()) {
     process_live(p_src_frames, p_dst_frames, p_frame_count);
   }
 }
@@ -110,22 +87,34 @@ bool AudioEffectTapOutInstance::process_silence() const {
 
 void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
   
+  AudioAnalyzer analyzer;
+  HashMap<tap_label_t, Vector<AudioFrame>> pid_readouts;
+
   //simulate the circuit
   //technically simulating behind by one `process` call because `total_time` 
   //  isn't updated yet. But if this instance is synced properly with the input
   //  instances, that's the only way to stop it from trying to read events that
   //  don't exist yet. Should cause a negligible delay.
-  Ref<TapPatchBay> patch_bay = effect->simulator->get_patch_bay();
+  Ref<TapPatchBay> patch_bay = effect->ls.get_simulator()->get_patch_bay();
   for (int i = 0; i < p_frame_count; i += effect->sample_skip) {
-    effect->simulator->process_to(total_time + i * effect->simulator->get_tick_rate());
+    effect->ls.get_simulator()->process_to(total_time + i * effect->ls.get_simulator()->get_tick_rate());
 
     AudioFrame total;
-    for (tap_label_t pid : effect->output_pids) {
+    for (tap_label_t pid : effect->ls.get_live_pids()) {
       AudioFrame pid_frame = patch_bay->get_pin_frame(pid);
+
+      pid_readouts[pid] = Vector<AudioFrame>();
+      pid_readouts[pid].append(pid_frame);
+      
       total += pid_frame;
     }
     p_dst_frames[i] = total;
   }
 
-  total_time += p_frame_count * effect->simulator->get_tick_rate();
+  for (auto pair : pid_readouts) {
+    AudioAnalyzer::statistics_t stats = analyzer.stats(pair.value);
+    print_line(pair.key, ": (", stats.mean.left, ", ", stats.mean.right, ") | (", stats.stddev.left, ", ", stats.stddev.right, ")");
+  }
+
+  total_time += p_frame_count * effect->ls.get_simulator()->get_tick_rate();
 }

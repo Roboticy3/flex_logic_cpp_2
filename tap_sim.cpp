@@ -121,7 +121,7 @@ void TapSim::process_to(tap_time_t end_time) {
     count++;
   }
 
-  print_line("processed ", count, " events;");
+  //print_line("processed ", count, " events;");
 }
 
 TapSim::TapSim() {

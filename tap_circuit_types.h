@@ -28,7 +28,7 @@ struct tap_frame {
   };
 
   //go from 2^0 (1.0 to -1.0) to 2^15 by adding an exponent as an unsigned int.
-  static constexpr uint32_t EXPONENT_ADD = 0x07800000; //15 in mantissa bits
+  static constexpr uint32_t EXPONENT_ADD = 0x07800000; //15 in exponent bits
 
   //then, shift from 2^15 (32768 to -32768) to uint16_t range by adding an offset
   static constexpr uint32_t FLOAT_ADD = 32768.0; //2^15 - 1 in float
