@@ -80,6 +80,7 @@ class TapPatchBay : public Resource {
     void detach_pins_internal(const tap_component_t &component, tap_label_t label);
 
     Vector2i get_pin_state(tap_label_t label) const;
+    Vector2 get_pin_frame(tap_label_t label) const;
     TypedDictionary<tap_label_t, Vector2i> all_pin_states() const;
     void set_pin_state(tap_label_t label, Vector2i new_state);
     void set_pin_state_with_frame(tap_label_t label, Vector2 new_state);

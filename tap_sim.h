@@ -17,6 +17,8 @@ class TapSim : public Resource {
   Ref<TapNetwork> network;
   Ref<TapPatchBay> patch_bay; //currently, network composes patch bay, but don't want to rely on that
 
+  int tick_rate = 1024;
+
   protected:
     static void _bind_methods();
 
@@ -26,6 +28,9 @@ class TapSim : public Resource {
 
     Ref<TapPatchBay> get_patch_bay() const;
     void set_patch_bay(Ref<TapPatchBay> new_patch_bay);
+
+    int get_tick_rate() const;
+    void set_tick_rate(int new_tick_rate);
 
     /*
     Process an event with a priority queue as the source. Pops the top event
@@ -44,7 +49,7 @@ class TapSim : public Resource {
     Proper simulation function. As opposed to the traditional timestep, pass a 
     total time target.
     */
-    void process_to(tap_time_t end_time, tap_queue_t &queue);
+    void process_to(tap_time_t end_time);
 
     /*
     Automatically set up a simulator with a minimally configured network + patch

@@ -28,6 +28,7 @@ void TapPatchBay::_bind_methods() {
   ClassDB::bind_method(D_METHOD("remove_pin", "label"), &TapPatchBay::remove_pin);
 
   ClassDB::bind_method(D_METHOD("get_pin_state", "label"), &TapPatchBay::get_pin_state);
+  ClassDB::bind_method(D_METHOD("get_pin_frame", "label"), &TapPatchBay::get_pin_frame);
   ClassDB::bind_method(D_METHOD("all_pin_states"), &TapPatchBay::all_pin_states);
 
   ClassDB::bind_method(D_METHOD("set_pin_state", "label", "new_state"), &TapPatchBay::set_pin_state);
@@ -208,6 +209,16 @@ Vector2i TapPatchBay::get_pin_state(tap_label_t label) const {
 
   tap_frame state = pin_states[label].state;
   return Vector2i(state.left, state.right);
+}
+
+Vector2 TapPatchBay::get_pin_frame(tap_label_t label) const {
+  if (pins[label].has_value() == false) {
+    print_error("Attempted to get state of nonexistant pin " + itos(label));
+    return Vector2(STATE_MISSING.x, STATE_MISSING.y);
+  }
+
+  AudioFrame frame = pin_states[label].state.audio_frame();
+  return Vector2(frame.left, frame.right);
 }
 
 TypedDictionary<tap_label_t, Vector2i> TapPatchBay::all_pin_states() const {

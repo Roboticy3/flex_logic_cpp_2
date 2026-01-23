@@ -28,7 +28,7 @@ struct tap_frame {
   };
 
   //go from 2^0 (1.0 to -1.0) to 2^15 by adding an exponent as an unsigned int.
-  static constexpr uint32_t EXPONENT_ADD = 0x07800000; //15 in mantissa bits
+  static constexpr uint32_t EXPONENT_ADD = 0x07800000; //15 in exponent bits
 
   //then, shift from 2^15 (32768 to -32768) to uint16_t range by adding an offset
   static constexpr uint32_t FLOAT_ADD = 32768.0; //2^15 - 1 in float
@@ -36,40 +36,37 @@ struct tap_frame {
   //32-bit floating point should be accurate enough to retain all detail during
   //  this process
   static inline bytes_t channel_to_bytes(float channel) {
-    // Map -1.0 to 1.0 to 0 to 65535 with explicit quantization
-
-    //limits don't convert well on their own (likely because exponent bits are weird?)
-    if (channel == 1.0) {
-      return -1; // 0xFF...F
+    if (channel >= 1.f) {
+      return 0xFFFF;
     }
-    else if (channel == -1.0) {
-      return 0; // 0x0
+    if (channel <= -1.f) {
+      return 0x0;
     }
-
-    struct {
-      union {
-        float f;
-        uint32_t u;
-      };
-    } converter;
-    converter.f = channel;
-    converter.u += EXPONENT_ADD;
-    converter.f += FLOAT_ADD;
-    return static_cast<bytes_t>(converter.f);
+    
+    uint32_t u;
+    memcpy(&u, &channel, sizeof(float));
+    u += EXPONENT_ADD;
+    float f;
+    memcpy(&f, &u, sizeof(float));
+    f += FLOAT_ADD;
+    return static_cast<bytes_t>(f);
   }
 
   static inline float bytes_to_channel(bytes_t bytes) {
     // Map 0 to 65535 back to -1.0 to 1.0
-    struct {
-      union {
-        float f;
-        uint32_t b;
-      };
-    } converter;
+    if (bytes >= 0xFFFF) {
+      return 1.f;
+    }
+    if (bytes <= 0x0) {
+      return -1.f;
+    }
 
-    converter.f = static_cast<float>(bytes) - FLOAT_ADD;
-    converter.b -= EXPONENT_ADD;
-    return converter.f;
+    float f = static_cast<float>(bytes);
+    uint32_t u;
+    memcpy(&u, &f, sizeof(float));
+    u -= EXPONENT_ADD;
+    f -= FLOAT_ADD;
+    return f;
   }
 
   static inline constexpr bytes_t bytes_diff(tap_frame::bytes_t a, tap_frame::bytes_t b) {

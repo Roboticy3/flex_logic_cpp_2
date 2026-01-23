@@ -8,6 +8,8 @@
 
 void wire_solver(const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
 
+void none_solver(const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
+
 void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
 
 /*

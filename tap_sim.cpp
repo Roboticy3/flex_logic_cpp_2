@@ -12,11 +12,16 @@ void TapSim::_bind_methods() {
   
   ClassDB::bind_method(D_METHOD("get_patch_bay"), &TapSim::get_patch_bay);
   ClassDB::bind_method(D_METHOD("set_patch_bay", "new_patch_bay"), &TapSim::set_patch_bay);
+  
+  ClassDB::bind_method(D_METHOD("get_tick_rate"), &TapSim::get_tick_rate);
+  ClassDB::bind_method(D_METHOD("set_tick_rate", "new_tick_rate"), &TapSim::set_tick_rate);
 
   ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "network", PROPERTY_HINT_RESOURCE_TYPE, "TapNetwork"), "set_network", "get_network");
   ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "patch_bay", PROPERTY_HINT_RESOURCE_TYPE, "TapPatchBay"), "set_patch_bay", "get_patch_bay");
+  ADD_PROPERTY(PropertyInfo(Variant::INT, "tick_rate", PROPERTY_HINT_RANGE, "0,1024"), "set_tick_rate", "get_tick_rate");
 
   ClassDB::bind_method(D_METHOD("process_once"), &TapSim::process_once);
+  ClassDB::bind_method(D_METHOD("process_to"), &TapSim::process_to);
 }
 
 Ref<TapNetwork> TapSim::get_network() const {
@@ -33,6 +38,14 @@ Ref<TapPatchBay> TapSim::get_patch_bay() const {
 
 void TapSim::set_patch_bay(Ref<TapPatchBay> new_patch_bay) {
   patch_bay = new_patch_bay;
+}
+
+int TapSim::get_tick_rate() const {
+  return tick_rate;
+}
+
+void TapSim::set_tick_rate(int new_tick_rate) {
+  tick_rate = new_tick_rate;
 }
 
 void TapSim::process_once_internal(tap_queue_t &queue) {
@@ -76,7 +89,7 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
       continue;
     }
 
-    print_line("Solving component " + itos(cid) + " due to event on pin " + itos(event.pid));
+    //print_line("Solving component " + itos(cid) + " due to event on pin " + itos(event.pid));
 
     //get the input state for the component, 
     Vector<const tap_event_t *> input;
@@ -100,10 +113,15 @@ void TapSim::process_once() {
   process_once_internal(queue);
 }
 
-void TapSim::process_to(tap_time_t end_time, tap_queue_t &queue) {
+void TapSim::process_to(tap_time_t end_time) {
+  tap_queue_t &queue = patch_bay->get_queue_internal();
+  int count = 0;
   while (!queue.is_empty() && queue.minimum().first.time <= end_time) {
     process_once_internal(queue);
+    count++;
   }
+
+  //print_line("processed ", count, " events;");
 }
 
 TapSim::TapSim() {

@@ -5,7 +5,9 @@
 #include "tap_patch_bay.h"
 #include "tap_network.h"
 #include "tap_sim.h"
-#include "audio_effect_tap.h"
+#include "audio_effect_tap_in.h"
+#include "audio_effect_tap_out.h"
+#include "audio_effect_tap_debugger.h"
 
 void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
@@ -22,8 +24,14 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<TapNetwork>();
 	ClassDB::register_class<TapSim>();
 
-	ClassDB::register_class<AudioEffectTap>();
-	ClassDB::register_class<AudioEffectTapInstance>();
+	ClassDB::register_class<AudioEffectTapIn>();
+	ClassDB::register_class<AudioEffectTapInInstance>();
+	ClassDB::register_class<AudioEffectTapOut>();
+	ClassDB::register_class<AudioEffectTapOutInstance>();
+
+	ClassDB::register_class<AudioEffectTapDebugger>();
+	ClassDB::register_class<AudioEffectTapDebuggerInstance>();
+	ClassDB::register_class<AudioEffectTapDebuggerQuery>();
 }
 
 void uninitialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
