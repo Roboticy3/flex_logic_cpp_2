@@ -111,8 +111,10 @@ void wire_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, ta
       continue; //skip the source pin
     }
 
+    tap_time_t new_time = latest.time + 1;
+
     //push to queue with a dummy time and pin ID
-    queue.insert({ latest.time + 1, latest.state, pins[i]->pid, cid}, latest.time);
+    queue.insert({ new_time, latest.state, pins[i]->pid, cid}, new_time);
   }
 }
 
@@ -126,30 +128,37 @@ void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, t
     return; // Not enough inputs
   }
 
-  uint32_t result_carry[2] = {
-    (uint32_t)(pins[0]->state.left) + (uint32_t)(pins[1]->state.left),
-    (uint32_t)(pins[0]->state.right) + (uint32_t)(pins[1]->state.right),
+  constexpr tap_frame::bytes_t BYTES_MAX = (tap_frame::bytes_t)(-1);
+
+  //move bytes_t signals to a signed frame to match real audio mixing
+  int32_t result_carry[2] = {
+    (int32_t)(pins[0]->state.left) + (int32_t)(pins[1]->state.left),
+    (int32_t)(pins[0]->state.right) + (int32_t)(pins[1]->state.right),
   };
 
-  //any overflow from 32-bit addition is caught here
-  uint32_t carry_mask = 0xFFFF0000;
+  //offset signed signal for correct range 2^15-1 to -2^15, instead of 2^16-1 to 0.
+  result_carry[0] -= BYTES_MAX;
+  result_carry[1] -= BYTES_MAX;
+
+  //if the signal passes this value in either direction, it's a carry.
   tap_frame carry = {
-    tap_frame::bytes_t((result_carry[0] & carry_mask) ? 0xFFFF : 0x0000),
-    tap_frame::bytes_t((result_carry[1] & carry_mask) ? 0xFFFF : 0x0000),
-  }; 
-
-  result_carry[0] &= ~carry_mask;
-  result_carry[1] &= ~carry_mask;
-  tap_frame result = {
-    tap_frame::bytes_t(result_carry[0]),
-    tap_frame::bytes_t(result_carry[1]),
+    (result_carry[0] >= BYTES_MAX || result_carry[0] < -BYTES_MAX) ? BYTES_MAX : (tap_frame::bytes_t)(0),
+    (result_carry[1] >= BYTES_MAX || result_carry[1] < -BYTES_MAX) ? BYTES_MAX : (tap_frame::bytes_t)(0),
   };
 
-  tap_time_t new_time = current_time;
+  //undo the offset and clean up any carried values from the result
+  result_carry[0] += BYTES_MAX;
+  result_carry[1] += BYTES_MAX;
+  tap_frame result = {
+    (tap_frame::bytes_t)result_carry[0],
+    (tap_frame::bytes_t)result_carry[1],
+  };
+
+  tap_time_t new_time = current_time + 3;
 
   // Push result to queue with a dummy time and pin ID
-  queue.insert({new_time + 3, result, pins[2]->pid, cid}, new_time);
-  queue.insert({new_time + 3, carry, pins[3]->pid, cid}, new_time);
+  queue.insert({new_time, result, pins[2]->pid, cid}, new_time);
+  queue.insert({new_time, carry, pins[3]->pid, cid}, new_time);
 }
 
 void TapComponentType::initialize_solver_registry_internal() {
