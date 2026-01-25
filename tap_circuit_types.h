@@ -30,39 +30,24 @@ struct tap_frame {
     };
   };
 
-  static constexpr float FLOAT_SCALE = (float)(1 << 15);
-  static constexpr float FLOAT_SCALE_INV = 1.f / FLOAT_SCALE;
-
-  //then, shift from 2^15 (32768 to -32768) to uint16_t range by adding an offset
-  static constexpr float FLOAT_ADD = FLOAT_SCALE - 1.f; //2^15 - 1 in float
+  static constexpr double BYTES_SCALE = (bytes_t)(0x7FFF);
+  static constexpr double BYTES_SCALE_INVERSE = 1.0 / BYTES_SCALE;
 
   //32-bit floating point should be accurate enough to retain all detail during
   //  this process
   static inline constexpr bytes_t channel_to_bytes(float channel) {
-    if (channel >= 1.f) {
-      return 0xFFFF;
-    }
-    if (channel <= -1.f) {
-      return 0x0;
-    }
+    double clamp = (double)channel < -1.0 ? -1.0 : ((double)channel > 1.0 ? 1.0 : (double)channel);
 
-    channel *= FLOAT_SCALE; //raise the range to be from -32768 to 32767
-    channel += FLOAT_ADD; //shift to be from 0 to 65535
-    return (bytes_t)(channel);
+    clamp += 1.0;
+
+    return (clamp * BYTES_SCALE) + 1;
   }
 
   static inline constexpr float bytes_to_channel(bytes_t bytes) {
-    // Map 0 to 65535 back to -1.0 to 1.0
-    if (bytes >= 0xFFFF) {
-      return 1.f;
-    }
-    if (bytes <= 0x0) {
-      return -1.f;
-    }
+    double channel = (double)(bytes) * BYTES_SCALE_INVERSE;
 
-    float channel = (float)(bytes);
-    channel -= FLOAT_ADD;
-    channel *= FLOAT_SCALE_INV;
+    channel -= 1.0;
+    
     return channel;
   }
 
