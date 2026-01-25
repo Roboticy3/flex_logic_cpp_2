@@ -4,6 +4,9 @@
 #include <cfloat>
 #include <optional>
 
+#include "core/object/object.h"
+#include "core/object/ref_counted.h"
+
 #include "core/math/vector2i.h"
 #include "core/math/audio_frame.h"
 
@@ -27,32 +30,28 @@ struct tap_frame {
     };
   };
 
-  //go from 2^0 (1.0 to -1.0) to 2^15 by adding an exponent as an unsigned int.
-  static constexpr uint32_t EXPONENT_ADD = 0x07800000; //15 in exponent bits
+  static constexpr float FLOAT_SCALE = (float)(1 << 15);
+  static constexpr float FLOAT_SCALE_INV = 1.f / FLOAT_SCALE;
 
   //then, shift from 2^15 (32768 to -32768) to uint16_t range by adding an offset
-  static constexpr uint32_t FLOAT_ADD = 32768.0; //2^15 - 1 in float
+  static constexpr float FLOAT_ADD = FLOAT_SCALE - 1.f; //2^15 - 1 in float
 
   //32-bit floating point should be accurate enough to retain all detail during
   //  this process
-  static inline bytes_t channel_to_bytes(float channel) {
+  static inline constexpr bytes_t channel_to_bytes(float channel) {
     if (channel >= 1.f) {
       return 0xFFFF;
     }
     if (channel <= -1.f) {
       return 0x0;
     }
-    
-    uint32_t u;
-    memcpy(&u, &channel, sizeof(float));
-    u += EXPONENT_ADD;
-    float f;
-    memcpy(&f, &u, sizeof(float));
-    f += FLOAT_ADD;
-    return static_cast<bytes_t>(f);
+
+    channel *= FLOAT_SCALE; //raise the range to be from -32768 to 32767
+    channel += FLOAT_ADD; //shift to be from 0 to 65535
+    return (bytes_t)(channel);
   }
 
-  static inline float bytes_to_channel(bytes_t bytes) {
+  static inline constexpr float bytes_to_channel(bytes_t bytes) {
     // Map 0 to 65535 back to -1.0 to 1.0
     if (bytes >= 0xFFFF) {
       return 1.f;
@@ -61,26 +60,24 @@ struct tap_frame {
       return -1.f;
     }
 
-    float f = static_cast<float>(bytes);
-    uint32_t u;
-    memcpy(&u, &f, sizeof(float));
-    u -= EXPONENT_ADD;
-    f -= FLOAT_ADD;
-    return f;
+    float channel = (float)(bytes);
+    channel -= FLOAT_ADD;
+    channel *= FLOAT_SCALE_INV;
+    return channel;
   }
 
   static inline constexpr bytes_t bytes_diff(tap_frame::bytes_t a, tap_frame::bytes_t b) {
     return a > b ? a - b : b - a;
   }
 
-  inline tap_frame(AudioFrame frame) :
+  inline constexpr tap_frame(AudioFrame frame) :
     left(channel_to_bytes(frame.left)), 
     right(channel_to_bytes(frame.right))
   {
 
   }
 
-  inline tap_frame(Vector2i frame) :
+  inline constexpr tap_frame(Vector2i frame) :
     left(static_cast<bytes_t>(frame.x)),
     right(static_cast<bytes_t>(frame.y))
   {
@@ -105,9 +102,32 @@ struct tap_frame {
     return AudioFrame(bytes_to_channel(left), bytes_to_channel(left));
   }
 
-  inline constexpr const bytes_t delta(tap_frame with) const {
+  inline constexpr bytes_t delta(tap_frame with) const {
     return bytes_diff(left, with.left) + bytes_diff(right, with.right);
   }
+};
+
+/**
+ * @brief Expose tap_frame functions to the editor for testing.
+ */
+class TapFrame : public RefCounted {
+  GDCLASS(TapFrame, RefCounted)
+
+  protected:
+    static void _bind_methods() {
+      ClassDB::bind_static_method("TapFrame", D_METHOD("to_bytes", "frame"), &TapFrame::to_bytes);
+      ClassDB::bind_static_method("TapFrame", D_METHOD("to_channel", "bytes"), &TapFrame::to_channel);
+    }
+  
+  public:
+    static Vector2i to_bytes(Vector2 frame) {
+      tap_frame b(AudioFrame(frame.x, frame.y));
+      return Vector2i(b.left, b.right);
+    }
+    static Vector2 to_channel(Vector2i bytes) {
+      tap_frame b(bytes.x, bytes.y);
+      return b.audio_frame();
+    }
 };
 
 

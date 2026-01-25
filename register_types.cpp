@@ -18,6 +18,7 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	//correctly.
 	TapComponentType::initialize_solver_registry_internal();
 
+	ClassDB::register_class<TapFrame>();
 	ClassDB::register_class<TapComponentType>();
 	
 	ClassDB::register_class<TapPatchBay>();

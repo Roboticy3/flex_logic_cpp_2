@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "core/object/class_db.h"
 
 #include "tap_component_type.h"
@@ -123,41 +125,26 @@ void none_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, ta
 }
 
 void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
-  // Example adder solver implementation
-  if (pins.size() < 4) {
-    return; // Not enough inputs
-  }
+  
+  //add in float space to act more like a mixxer than a binary adder
+  AudioFrame frame0 = pins[0]->state.audio_frame();
+  AudioFrame frame1 = pins[1]->state.audio_frame();
 
-  constexpr tap_frame::bytes_t BYTES_MAX = (tap_frame::bytes_t)(-1);
+  AudioFrame result = frame0 + frame1;
 
-  //move bytes_t signals to a signed frame to match real audio mixing
-  int32_t result_carry[2] = {
-    (int32_t)(pins[0]->state.left) + (int32_t)(pins[1]->state.left),
-    (int32_t)(pins[0]->state.right) + (int32_t)(pins[1]->state.right),
+  tap_frame carry {
+    tap_frame::bytes_t(result.l * result.l > 1.0f ? 0xFFFF : 0x0),
+    tap_frame::bytes_t(result.r * result.r > 1.0f ? 0xFFFF : 0x0)
   };
 
-  //offset signed signal for correct range 2^15-1 to -2^15, instead of 2^16-1 to 0.
-  result_carry[0] -= BYTES_MAX;
-  result_carry[1] -= BYTES_MAX;
+  tap_frame result_frame(result);
 
-  //if the signal passes this value in either direction, it's a carry.
-  tap_frame carry = {
-    (result_carry[0] >= BYTES_MAX || result_carry[0] < -BYTES_MAX) ? BYTES_MAX : (tap_frame::bytes_t)(0),
-    (result_carry[1] >= BYTES_MAX || result_carry[1] < -BYTES_MAX) ? BYTES_MAX : (tap_frame::bytes_t)(0),
-  };
-
-  //undo the offset and clean up any carried values from the result
-  result_carry[0] += BYTES_MAX;
-  result_carry[1] += BYTES_MAX;
-  tap_frame result = {
-    (tap_frame::bytes_t)result_carry[0],
-    (tap_frame::bytes_t)result_carry[1],
-  };
+  //print_line("mixed result ", Vector2(result.l, result.r), " from ", Vector2(frame0.l, frame0.r), " and ", Vector2(frame1.l, frame1.r), " with carry ", carry.left, ", ", carry.right);
 
   tap_time_t new_time = current_time + 3;
 
   // Push result to queue with a dummy time and pin ID
-  queue.insert({new_time, result, pins[2]->pid, cid}, new_time);
+  queue.insert({new_time, result_frame, pins[2]->pid, cid}, new_time);
   queue.insert({new_time, carry, pins[3]->pid, cid}, new_time);
 }
 
