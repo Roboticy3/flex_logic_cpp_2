@@ -94,9 +94,9 @@ void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, Aud
 
     AudioFrame total;
     for (tap_label_t pid : effect->ls.get_live_pids()) {
-      AudioFrame pid_frame = patch_bay->get_pin_frame(pid);
+      Vector2 pid_frame = patch_bay->get_pin_state(pid);
       
-      total += pid_frame;
+      total += AudioFrame(pid_frame.x, pid_frame.y);
     }
     p_dst_frames[i] = total;
   }

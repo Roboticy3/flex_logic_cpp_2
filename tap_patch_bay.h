@@ -55,10 +55,10 @@ class TapPatchBay : public Resource {
 
     int get_event_count() const;
     //if no events are available, returns (2,2)
-    Vector2i pop_next_state();
+    Vector2 pop_next_state();
     
     std::optional<tap_event_t> get_next_event_internal();
-    Vector2i get_next_state();
+    Vector2 get_next_state();
     int get_next_pid();
     int get_next_time();
 
@@ -67,8 +67,7 @@ class TapPatchBay : public Resource {
     int get_sample_count() const;
     void set_sample_count_internal(int new_samples);
 
-    tap_label_t add_pin(Vector2i initial_state);
-    tap_label_t add_pin_with_frame(Vector2 initial_frame);
+    tap_label_t add_pin(Vector2 initial_state);
     bool has_pin(tap_label_t label) const;
     bool remove_pin(tap_label_t label);
 
@@ -79,11 +78,9 @@ class TapPatchBay : public Resource {
     void attach_pins_internal(const tap_component_t &component, tap_label_t label);
     void detach_pins_internal(const tap_component_t &component, tap_label_t label);
 
-    Vector2i get_pin_state(tap_label_t label) const;
-    Vector2 get_pin_frame(tap_label_t label) const;
-    TypedDictionary<tap_label_t, Vector2i> all_pin_states() const;
-    void set_pin_state(tap_label_t label, Vector2i new_state);
-    void set_pin_state_with_frame(tap_label_t label, Vector2 new_state);
+    Vector2 get_pin_state(tap_label_t label) const;
+    TypedDictionary<tap_label_t, Vector2> all_pin_states() const;
+    void set_pin_state(tap_label_t label, Vector2 new_state);
 
     /*
     Do not allow for external modification of pins.

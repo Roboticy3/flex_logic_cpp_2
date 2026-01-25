@@ -26,7 +26,9 @@ void TapComponentType::_bind_methods() {
   bool first = true;
 
   for (auto const& [key, value] : solver_registry) {
-    if (!first) hint += ",";
+    if (!first) {
+      hint += ",";
+    }
     first = false;
     hint += String(key);
   }
@@ -127,26 +129,38 @@ void none_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, ta
 void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
   
   //add in float space to act more like a mixxer than a binary adder
-  AudioFrame frame0 = pins[0]->state.audio_frame();
-  AudioFrame frame1 = pins[1]->state.audio_frame();
+  AudioFrame frame0 = pins[0]->state;
+  AudioFrame frame1 = pins[1]->state;
 
   AudioFrame result = frame0 + frame1;
+  AudioFrame carry;
 
-  tap_frame carry {
-    tap_frame::bytes_t(result.l * result.l > 1.0f ? 0xFFFF : 0x0),
-    tap_frame::bytes_t(result.r * result.r > 1.0f ? 0xFFFF : 0x0)
-  };
+  if (result.left < -1.0f) {
+    carry.left = -1.0f;
+    result.left = -1.0f;
+  }
+  else if (result.left > 1.0f) {
+    carry.left = 1.0f;
+    result.left = 1.0f;
+  }
 
-  tap_frame result_frame(result);
+  if (result.right < -1.0f) {
+    carry.right = -1.0f;
+    result.right = -1.0f;
+  }
+  else if (result.right > 1.0f) {
+    carry.right = 1.0f;
+    result.right = 1.0f;
+  }
 
   //print_line("mixed result ", Vector2(result.l, result.r), " from ", Vector2(frame0.l, frame0.r), " and ", Vector2(frame1.l, frame1.r), " with carry ", carry.left, ", ", carry.right);
 
   tap_time_t new_time = current_time + 3;
 
   // Push result to queue with a dummy time and pin ID
-  queue.insert({new_time, result_frame, pins[2]->pid, cid}, new_time);
+  queue.insert({new_time, result, pins[2]->pid, cid}, new_time);
   queue.insert({new_time, carry, pins[3]->pid, cid}, new_time);
-}
+} 
 
 void TapComponentType::initialize_solver_registry_internal() {
   TapComponentType::solver_registry.clear();

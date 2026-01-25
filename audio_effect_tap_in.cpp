@@ -26,7 +26,7 @@ void AudioEffectTapIn::_bind_methods() {
   ClassDB::bind_method(D_METHOD("set_line_out", "new_line_out"), &AudioEffectTapIn::set_line_out);
 
   ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
-  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "activation_delta", PROPERTY_HINT_RANGE, "0,65535"), "set_activation_delta", "get_activation_delta");
+  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "activation_delta", PROPERTY_HINT_RANGE, "0,1.0,0.001"), "set_activation_delta", "get_activation_delta");
   ADD_PROPERTY(PropertyInfo(Variant::INT, "pid"), "set_pid", "get_pid");
 
   ADD_PROPERTY(PropertyInfo(Variant::BOOL, "line_in"), "set_line_in", "get_line_in");
@@ -40,11 +40,11 @@ Ref<AudioEffectInstance> AudioEffectTapIn::instantiate() {
   return instance;
 }
 
-tap_frame::bytes_t AudioEffectTapIn::get_activation_delta() const {
+tap_sample_t AudioEffectTapIn::get_activation_delta() const {
   return activation_delta;
 }
 
-void AudioEffectTapIn::set_activation_delta(tap_frame::bytes_t new_activation_delta) {
+void AudioEffectTapIn::set_activation_delta(tap_sample_t new_activation_delta) {
   activation_delta = new_activation_delta;
 }
 
@@ -94,7 +94,9 @@ void AudioEffectTapInInstance::process(const AudioFrame *p_src_frames, AudioFram
   }
 
   if (effect->line_out) {
-    memcpy(p_dst_frames, p_src_frames, p_frame_count);
+    for (int i = 0; i < p_frame_count; i++) {
+      p_dst_frames[i] = p_src_frames[i];
+    }
   }
 }
 
@@ -107,14 +109,13 @@ void AudioEffectTapInInstance::process_line_in(const AudioFrame *p_src_frames, A
 
   tap_queue_t &queue = patch_bay->get_queue_internal();
 
-  //tap_frame::bytes_t max_delta = 0;
-  //tap_frame::bytes_t max_value = 0;
   for (int i = 0; i < p_frame_count; i++) {
-    tap_frame src_frame = tap_frame(p_src_frames[i]);
-    //max_delta = last_activation.delta(src_frame) > max_delta ? last_activation.delta(src_frame):max_delta;
-    //max_value = src_frame.left > max_value ? src_frame.left : max_value;
-    //max_value = src_frame.right > max_value ? src_frame.right : max_value;
-    if (last_activation.delta(src_frame) >= effect->activation_delta) {
+    AudioFrame src_frame = p_src_frames[i];
+
+    float delta = Math::abs(src_frame.left - last_activation.left);
+    delta += Math::abs(src_frame.right - last_activation.right);
+    
+    if (delta >= effect->activation_delta) {
       tap_time_t time = total_time + i * effect->simulator->get_tick_rate();
       queue.insert({time, src_frame, effect->pid, patch_bay->COMPONENT_MISSING}, time);
       last_activation = src_frame;
@@ -123,9 +124,6 @@ void AudioEffectTapInInstance::process_line_in(const AudioFrame *p_src_frames, A
 
   patch_bay->set_sample_count_internal(p_frame_count);
   total_time += p_frame_count * effect->simulator->get_tick_rate();
-
-  //print_line(vformat("Max delta for audio process step: %d", max_delta));
-  //print_line(vformat("Max VALUE for audio process step: %d", max_value));
 }
 
 bool AudioEffectTapInInstance::process_silence() const {

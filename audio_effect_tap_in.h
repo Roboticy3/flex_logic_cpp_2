@@ -27,7 +27,7 @@ class AudioEffectTapInInstance : public AudioEffectInstance {
   AudioEffectTapIn *effect;
 
   //instance specific state
-  tap_frame last_activation;
+  AudioFrame last_activation;
   tap_time_t total_time = 0;
   
   public:
@@ -63,7 +63,7 @@ class AudioEffectTapIn : public AudioEffect {
   friend class AudioEffectTapInInstance;
 
   Ref<TapSim> simulator;
-  tap_frame::bytes_t activation_delta = 1; 
+  tap_sample_t activation_delta = 0.0; 
   tap_label_t pid = 0; 
 
   bool line_in = true;
@@ -78,8 +78,8 @@ class AudioEffectTapIn : public AudioEffect {
     Ref<TapSim> get_simulator() const;
     void set_simulator(Ref<TapSim> new_simulator);
 
-    tap_frame::bytes_t get_activation_delta() const;
-    void set_activation_delta(tap_frame::bytes_t new_activation_delta);
+    tap_sample_t get_activation_delta() const;
+    void set_activation_delta(tap_sample_t new_activation_delta);
     
     tap_label_t get_pid() const;
     void set_pid(tap_label_t new_pid);
