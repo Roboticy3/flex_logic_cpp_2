@@ -2,6 +2,7 @@
 
 #include "core/object/class_db.h"
 
+#include "core/object/object.h"
 #include "tap_circuit_types.h"
 #include "tap_component_type.h"
 #include "tap_sim.h"
@@ -16,9 +17,12 @@ void TapSim::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_tick_rate"), &TapSim::get_tick_rate);
   ClassDB::bind_method(D_METHOD("set_tick_rate", "new_tick_rate"), &TapSim::set_tick_rate);
 
+  ClassDB::bind_method(D_METHOD("get_latest_event_time"), &TapSim::get_latest_event_time);
+
   ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "network", PROPERTY_HINT_RESOURCE_TYPE, "TapNetwork"), "set_network", "get_network");
   ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "patch_bay", PROPERTY_HINT_RESOURCE_TYPE, "TapPatchBay"), "set_patch_bay", "get_patch_bay");
   ADD_PROPERTY(PropertyInfo(Variant::INT, "tick_rate", PROPERTY_HINT_RANGE, "0,1024"), "set_tick_rate", "get_tick_rate");
+  ADD_PROPERTY(PropertyInfo(Variant::INT, "latest_event_time"), "", "get_latest_event_time");
 
   ClassDB::bind_method(D_METHOD("process_once"), &TapSim::process_once);
   ClassDB::bind_method(D_METHOD("process_to"), &TapSim::process_to);
@@ -46,6 +50,10 @@ int TapSim::get_tick_rate() const {
 
 void TapSim::set_tick_rate(int new_tick_rate) {
   tick_rate = new_tick_rate;
+}
+
+tap_time_t TapSim::get_latest_event_time() const {
+  return latest_event_time;
 }
 
 void TapSim::process_once_internal(tap_queue_t &queue) {
@@ -113,7 +121,7 @@ void TapSim::process_once() {
   process_once_internal(queue);
 }
 
-void TapSim::process_to(tap_time_t end_time) {
+int TapSim::process_to(tap_time_t end_time) {
   tap_queue_t &queue = patch_bay->get_queue_internal();
   int count = 0;
   while (!queue.is_empty() && queue.minimum().first.time <= end_time) {
@@ -121,7 +129,12 @@ void TapSim::process_to(tap_time_t end_time) {
     count++;
   }
 
-  //print_line("processed ", count, " events;");
+  return count;
+}
+
+void TapSim::push_event(tap_time_t time, AudioFrame state, tap_label_t pid) {
+  patch_bay->get_queue_internal().insert(tap_event_t{time, state, pid, patch_bay->COMPONENT_MISSING}, time);
+  latest_event_time = time > latest_event_time ? time : latest_event_time;
 }
 
 TapSim::TapSim() {

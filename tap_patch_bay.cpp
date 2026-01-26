@@ -20,7 +20,6 @@ void TapPatchBay::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_next_state"), &TapPatchBay::get_next_state);
   ClassDB::bind_method(D_METHOD("get_next_pid"), &TapPatchBay::get_next_pid);
   ClassDB::bind_method(D_METHOD("get_next_time"), &TapPatchBay::get_next_time);
-  ClassDB::bind_method(D_METHOD("get_sample_count"), &TapPatchBay::get_sample_count);
 
   ClassDB::bind_method(D_METHOD("add_pin", "initial_state"), &TapPatchBay::add_pin);
   ClassDB::bind_method(D_METHOD("has_pin", "label"), &TapPatchBay::has_pin);
@@ -28,8 +27,6 @@ void TapPatchBay::_bind_methods() {
 
   ClassDB::bind_method(D_METHOD("get_pin_state", "label"), &TapPatchBay::get_pin_state);
   ClassDB::bind_method(D_METHOD("all_pin_states"), &TapPatchBay::all_pin_states);
-  ClassDB::bind_method(D_METHOD("set_pin_state", "new_state"), &TapPatchBay::set_pin_state);
-
   ClassDB::bind_method(D_METHOD("set_pin_state", "label", "new_state"), &TapPatchBay::set_pin_state);
 
   ClassDB::bind_method(D_METHOD("get_all_pin_connections"), &TapPatchBay::get_all_pin_connections);
@@ -104,14 +101,6 @@ int TapPatchBay::get_next_time() {
 
 tap_queue_t &TapPatchBay::get_queue_internal() {
   return queue;
-}
-
-int TapPatchBay::get_sample_count() const {
-  return samples;
-}
-
-void TapPatchBay::set_sample_count_internal(int new_samples) {
-  samples = new_samples;
 }
 
 tap_label_t TapPatchBay::add_pin(Vector2 initial_state) {
@@ -207,6 +196,7 @@ Vector2 TapPatchBay::get_pin_state(tap_label_t label) const {
   }
 
   AudioFrame frame = pin_states[label].state;
+  //print_line(itos(label), ": ", frame.left, ", ", frame.right);
   return Vector2(frame.left, frame.right);
 }
 

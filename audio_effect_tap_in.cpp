@@ -102,13 +102,6 @@ void AudioEffectTapInInstance::process(const AudioFrame *p_src_frames, AudioFram
 
 void AudioEffectTapInInstance::process_line_in(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 
-  Ref<TapPatchBay> patch_bay = effect->simulator->get_patch_bay();
-  if (patch_bay.is_null()) {
-    return;
-  }
-
-  tap_queue_t &queue = patch_bay->get_queue_internal();
-
   for (int i = 0; i < p_frame_count; i++) {
     AudioFrame src_frame = p_src_frames[i];
 
@@ -117,12 +110,11 @@ void AudioEffectTapInInstance::process_line_in(const AudioFrame *p_src_frames, A
     
     if (delta >= effect->activation_delta) {
       tap_time_t time = total_time + i * effect->simulator->get_tick_rate();
-      queue.insert({time, src_frame, effect->pid, patch_bay->COMPONENT_MISSING}, time);
+      effect->simulator->push_event(time, src_frame, effect->pid);
       last_activation = src_frame;
     }
   }
 
-  patch_bay->set_sample_count_internal(p_frame_count);
   total_time += p_frame_count * effect->simulator->get_tick_rate();
 }
 

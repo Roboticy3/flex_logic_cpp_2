@@ -1,3 +1,6 @@
+#include "core/math/math_funcs.h"
+#include "servers/audio/audio_server.h"
+
 #include "audio_effect_tap_out.h"
 
 void AudioEffectTapOut::_bind_methods() {
@@ -75,6 +78,22 @@ void AudioEffectTapOutInstance::process(const AudioFrame *p_src_frames, AudioFra
   if (effect->ls.get_live()) {
     process_live(p_src_frames, p_dst_frames, p_frame_count);
   }
+
+  /* Insanity check
+  const double frequency = 440.0;
+	const double sample_rate = AudioServer::get_singleton()->get_mix_rate();
+	const double phase_inc = 2.0 * Math::PI * frequency / sample_rate;
+
+	for (int i = 0; i < p_frame_count; i++) {
+		float sample = static_cast<float>(std::sin(phase));
+		phase += phase_inc;
+		if (phase > 2.0 * Math::PI)
+			phase -= 2.0 * Math::PI;
+
+		p_dst_frames[i].left = sample;
+		p_dst_frames[i].right = sample;
+	}
+  */
 }
 
 bool AudioEffectTapOutInstance::process_silence() const {
@@ -83,23 +102,34 @@ bool AudioEffectTapOutInstance::process_silence() const {
 
 void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 
+  tap_time_t target_time = total_time + p_frame_count * effect->get_simulator()->get_tick_rate();
+
+  if (effect->get_simulator()->get_latest_event_time() <= target_time) {
+    WARN_PRINT("Not enough events in simulator, skipping processing");
+    return;
+  }
+
   //simulate the circuit
   //technically simulating behind by one `process` call because `total_time` 
   //  isn't updated yet. But if this instance is synced properly with the input
   //  instances, that's the only way to stop it from trying to read events that
   //  don't exist yet. Should cause a negligible delay.
-  Ref<TapPatchBay> patch_bay = effect->ls.get_simulator()->get_patch_bay();
+  Ref<TapPatchBay> patch_bay = effect->get_simulator()->get_patch_bay();
   for (int i = 0; i < p_frame_count; i += effect->sample_skip) {
-    effect->ls.get_simulator()->process_to(total_time + i * effect->ls.get_simulator()->get_tick_rate());
+    tap_time_t time = total_time + i * effect->get_simulator()->get_tick_rate();
+    effect->get_simulator()->process_to(time);
 
     AudioFrame total;
-    for (tap_label_t pid : effect->ls.get_live_pids()) {
+    for (tap_label_t pid : effect->get_output_pids()) {
       Vector2 pid_frame = patch_bay->get_pin_state(pid);
+
+      //print_line("Pin " + itos(pid) + " state: ", (pid_frame.x), ", ", pid_frame.y, " time: ", time);
       
       total += AudioFrame(pid_frame.x, pid_frame.y);
     }
     p_dst_frames[i] = total;
+    
   }
 
-  total_time += p_frame_count * effect->ls.get_simulator()->get_tick_rate();
+  total_time = target_time;
 }

@@ -18,6 +18,7 @@ class TapSim : public Resource {
   Ref<TapPatchBay> patch_bay; //currently, network composes patch bay, but don't want to rely on that
 
   int tick_rate = 1024;
+  tap_time_t latest_event_time = 0;
 
   protected:
     static void _bind_methods();
@@ -31,6 +32,8 @@ class TapSim : public Resource {
 
     int get_tick_rate() const;
     void set_tick_rate(int new_tick_rate);
+
+    tap_time_t get_latest_event_time() const;
 
     /*
     Process an event with a priority queue as the source. Pops the top event
@@ -48,8 +51,16 @@ class TapSim : public Resource {
     /*
     Proper simulation function. As opposed to the traditional timestep, pass a 
     total time target.
+
+    Returns the number of events processed.
     */
-    void process_to(tap_time_t end_time);
+    int process_to(tap_time_t end_time);
+
+    /*
+    Push an event and update the internal `latest_event_time` value, which users
+    can read to check if there are enough events to simulate to a certain time.
+    */
+    void push_event(tap_time_t time, AudioFrame state, tap_label_t pid);
 
     /*
     Automatically set up a simulator with a minimally configured network + patch
