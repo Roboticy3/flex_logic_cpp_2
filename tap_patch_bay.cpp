@@ -230,11 +230,11 @@ void TapPatchBay::clear_pins() {
 TypedDictionary<tap_label_t, PackedInt64Array> TapPatchBay::get_all_pin_connections() const {
   TypedDictionary<tap_label_t, PackedInt64Array> dict;
   for (int i = 0; i < pins.size(); i++) {
-    PackedInt64Array connections = get_pin_connections(i);
-    if (!connections.is_empty()) {
+    PackedInt64Array pin_connections = get_pin_connections(i);
+    if (pin_connections.is_empty()) {
       continue;
     }
-    dict[i] = connections;
+    dict[i] = pin_connections;
   }
   return dict;
 }

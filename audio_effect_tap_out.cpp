@@ -1,4 +1,5 @@
 #include "audio_effect_tap_out.h"
+#include "core/object/object.h"
 
 void AudioEffectTapOut::_bind_methods() {
   ClassDB::bind_method(D_METHOD("any_input_connected"), &AudioEffectTapOut::any_input_connected);
@@ -20,8 +21,8 @@ void AudioEffectTapOut::_bind_methods() {
 
   ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
   ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "output_pids"), "set_output_pids", "get_output_pids");
-  ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live"), "set_live", "get_live");
-  ADD_PROPERTY(PropertyInfo(Variant::BOOL, "executing"), "set_executing", "get_executing");
+  ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_live", "get_live");
+  ADD_PROPERTY(PropertyInfo(Variant::BOOL, "executing", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_executing", "get_executing");
   ADD_PROPERTY(PropertyInfo(Variant::INT, "sample_skip", PROPERTY_HINT_ENUM_SUGGESTION, "1,2,4"), "set_sample_skip", "get_sample_skip");
 }
 
@@ -51,6 +52,9 @@ bool AudioEffectTapOut::get_live() const {
 
 void AudioEffectTapOut::set_live(bool new_live) {
   ls.set_live(new_live);
+  if (!ls.get_live()) {
+    executing = false;
+  }
 }
 
 bool AudioEffectTapOut::get_executing() const {
