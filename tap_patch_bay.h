@@ -2,15 +2,12 @@
 
 #include <optional>
 
-#include "core/object/class_db.h"
 #include "core/io/resource.h"
 #include "core/variant/variant.h"
 #include "core/variant/typed_dictionary.h"
 #include "core/templates/vector.h"
-#include "core/error/error_list.h"
 
 #include "labeling.h"
-#include "circuit.h"
 #include "tap_circuit_types.h"
 
 
@@ -97,6 +94,7 @@ class TapPatchBay : public Resource {
      */
     void clear_pins();
 
+    PackedInt64Array get_pin_connections(tap_label_t label) const;
     TypedDictionary<tap_label_t, PackedInt64Array> get_all_pin_connections() const;
     
     TapPatchBay() = default;

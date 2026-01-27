@@ -3,7 +3,6 @@
 #include "core/object/class_db.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/typed_dictionary.h"
-#include "core/math/math_defs.h"
 #include "core/math/audio_frame.h"
 #include "core/math/vector2.h"
 
@@ -29,6 +28,7 @@ void TapPatchBay::_bind_methods() {
   ClassDB::bind_method(D_METHOD("all_pin_states"), &TapPatchBay::all_pin_states);
   ClassDB::bind_method(D_METHOD("set_pin_state", "label", "new_state"), &TapPatchBay::set_pin_state);
 
+  ClassDB::bind_method(D_METHOD("get_pin_connections", "label"), &TapPatchBay::get_pin_connections);
   ClassDB::bind_method(D_METHOD("get_all_pin_connections"), &TapPatchBay::get_all_pin_connections);
 
   ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "state_missing"), "", "get_state_missing");
@@ -200,6 +200,20 @@ Vector2 TapPatchBay::get_pin_state(tap_label_t label) const {
   return Vector2(frame.left, frame.right);
 }
 
+PackedInt64Array TapPatchBay::get_pin_connections(tap_label_t label) const {
+  if (!pins.label_get(label)) {
+    print_error("Attempted to get connections of nonexistant pin " + itos(label));
+    return PackedInt64Array();
+  }
+
+  PackedInt64Array pin_connections;
+  const Vector<tap_label_t> &components = pins[label]->components;
+  for (int i = 0; i < components.size(); i++) {
+    pin_connections.push_back(components[i]);
+  }
+  return pin_connections;
+}
+
 std::optional<tap_pin_t> TapPatchBay::get_pin_internal(tap_label_t label) const {
   return pins.label_get(label);
 }
@@ -216,17 +230,11 @@ void TapPatchBay::clear_pins() {
 TypedDictionary<tap_label_t, PackedInt64Array> TapPatchBay::get_all_pin_connections() const {
   TypedDictionary<tap_label_t, PackedInt64Array> dict;
   for (int i = 0; i < pins.size(); i++) {
-    auto p_pin = pins.label_get(i);
-    if (!p_pin.has_value()) {
+    PackedInt64Array connections = get_pin_connections(i);
+    if (!connections.is_empty()) {
       continue;
     }
-
-    PackedInt64Array p_connections;
-    for (auto comp_id : p_pin->components) {
-      p_connections.push_back(static_cast<int64_t>(comp_id));
-    }
-
-    dict[i] = p_connections;
+    dict[i] = connections;
   }
   return dict;
 }

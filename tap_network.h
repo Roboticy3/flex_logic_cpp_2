@@ -1,11 +1,11 @@
 #pragma once
 
-#include "core/object/class_db.h"
 #include "core/io/resource.h"
 #include "core/templates/vector.h"
 #include "core/variant/array.h"
 #include "core/variant/typed_array.h"
 
+#include "core/variant/variant.h"
 #include "labeling.h"
 #include "tap_circuit_types.h"
 #include "tap_component_type.h"
@@ -124,6 +124,8 @@ class TapNetwork : public Resource {
      * @brief Clear all components from this network
      */
     void clear_components();
+
+    PackedInt64Array get_component_connections(tap_label_t component_label) const;
 
     /**
      * @brief Get all component connections.

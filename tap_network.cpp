@@ -20,6 +20,7 @@ void TapNetwork::_bind_methods() {
   ClassDB::bind_method(D_METHOD("move_component", "component_label", "new_pin_labels"), &TapNetwork::move_component);
   ClassDB::bind_method(D_METHOD("remove_component", "component_label"), &TapNetwork::remove_component);
 
+  ClassDB::bind_method(D_METHOD("get_component_connections", "component_label"), &TapNetwork::get_component_connections);
   ClassDB::bind_method(D_METHOD("get_all_component_connections"), &TapNetwork::get_all_component_connections);
   ClassDB::bind_method(D_METHOD("get_all_component_types"), &TapNetwork::get_all_component_types);
 
@@ -52,9 +53,9 @@ void TapNetwork::set_component_types(TypedArray<TapComponentType> p_component_ty
 TypedArray<TapComponentType> TapNetwork::get_component_types() const {
   TypedArray<TapComponentType> arr;
   for (int i = 0; i < component_types.size(); i++) {
-    if (component_types[i].has_value()) 
+    if (component_types[i].has_value()) {
       arr.push_back(component_types[i].value());
-    else {
+    } else {
       arr.push_back((const Object *)nullptr);
     }
   }
@@ -221,16 +222,26 @@ void TapNetwork::clear_components() {
   components.clear();
 }
 
+PackedInt64Array TapNetwork::get_component_connections(tap_label_t component_label) const {
+  std::optional<tap_component_t> o_component = components.label_get(component_label);
+  if (!o_component.has_value()) {
+    return PackedInt64Array();
+  }
+  tap_component_t component = o_component.value();
+  PackedInt64Array pin_labels;
+  for (tap_label_t label : component.pins) {
+    pin_labels.push_back(static_cast<int64_t>(label));
+  }
+  return pin_labels;
+}
+
 Array TapNetwork::get_all_component_connections() const {
   Array arr;
 
-  for (auto o_component : components) {
-    PackedInt64Array pin_labels;
-    if (o_component.has_value()) {
-      tap_component_t component = o_component.value();
-      for (auto label : component.pins) {
-        pin_labels.push_back(static_cast<int64_t>(label));
-      }
+  for (tap_label_t i = 0; i < components.size(); i++) {
+    PackedInt64Array pin_labels = get_component_connections(i);
+    if (pin_labels.is_empty()) {
+      continue;
     }
     arr.push_back(pin_labels);
   }
@@ -241,16 +252,22 @@ PackedInt64Array TapNetwork::get_all_component_types() const {
   PackedInt64Array arr;
   for (auto o_component : components) {
     tap_label_t found_type = -1;
-    if (!o_component.has_value()) continue;
+    if (!o_component.has_value()) {
+      continue;
+    }
 
     tap_component_t component = o_component.value();
 
     for (int i = 0; i < component_types.size(); i++) {
       auto o_component_type = component_types.label_get(i);
-      if (!o_component_type.has_value()) continue;
+      if (!o_component_type.has_value()) {
+        continue;
+      }
       
       Ref<TapComponentType> component_type = o_component_type.value();
-      if (component_type.is_null()) continue;
+      if (component_type.is_null()) {
+        continue;
+      }
       
       if (component.component_type.name == component_type->get_type_name()) {
         found_type = i;

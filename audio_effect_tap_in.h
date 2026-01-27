@@ -69,6 +69,8 @@ class AudioEffectTapIn : public AudioEffect {
   bool line_in = true;
   bool line_out = false;
 
+  int sample_skip = 2;
+
   protected:
     static void _bind_methods();
 
@@ -89,6 +91,9 @@ class AudioEffectTapIn : public AudioEffect {
 
     bool get_line_out() const;
     void set_line_out(bool new_line_out);
+
+    int get_sample_skip() const;
+    void set_sample_skip(int new_sample_skip);
 
     AudioEffectTapIn();
 };
