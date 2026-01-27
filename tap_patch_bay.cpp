@@ -208,6 +208,11 @@ tap_event_t *TapPatchBay::get_state_internal(tap_label_t label) {
   return &(pin_states.ptrw()[label]);
 }
 
+void TapPatchBay::clear_pins() {
+  pins.clear();
+  pin_states.clear();
+}
+
 TypedDictionary<tap_label_t, PackedInt64Array> TapPatchBay::get_all_pin_connections() const {
   TypedDictionary<tap_label_t, PackedInt64Array> dict;
   for (int i = 0; i < pins.size(); i++) {

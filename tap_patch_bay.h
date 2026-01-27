@@ -14,29 +14,29 @@
 #include "tap_circuit_types.h"
 
 
-/*
-Store templates for circuit primitives that can be attached to an audio tap. Not
-responsible for event propogation, only maintaining pins and event queue.
-
-Also used to expose basic event operations to the editor. Unregistered methods
-will be named *_internal.
-
-Queue is a protected member for easy access during simulation.
-*/
+/**
+ * @brief Store templates for circuit primitives that can be attached to an audio tap.
+ * 
+ * Not responsible for event propagation, only maintaining pins and event queue.
+ * 
+ * Also used to expose basic event operations to the editor. Unregistered methods
+ * will be named *_internal.
+ * 
+ * Queue is a protected member for easy access during simulation.
+ */
 class TapPatchBay : public Resource {
   GDCLASS(TapPatchBay, Resource)
 
-  //number of samples made on the last event pass
-  int samples = 0;
-  int tick_rate = 1024; //number of simulation ticks per audio sample
+  /// @brief Number of simulation ticks per audio sample
+  int tick_rate = 1024;
 
-  //event queue
+  /// @brief Event queue
   tap_queue_t queue;
 
-  //pin mapping
+  /// @brief Pin mapping
   Labeling<tap_pin_t> pins;
 
-  //state mapping (keep separate from optional pins for easier access)
+  /// @brief State mapping (keep separate from optional pins for easier access)
   Vector<tap_event_t> pin_states;
 
   protected:
@@ -44,7 +44,8 @@ class TapPatchBay : public Resource {
 
   public:
 
-    static constexpr tap_label_t COMPONENT_MISSING = -1; //narrowing conversion my ass
+    /// @brief Constant indicating component is missing (narrowing conversion my ass)
+    static constexpr tap_label_t COMPONENT_MISSING = -1;
 
     static constexpr Vector2i STATE_MISSING = Vector2i(2, 2);
     inline Vector2i get_state_missing() const {
@@ -54,7 +55,7 @@ class TapPatchBay : public Resource {
     void push_event(tap_time_t time, Vector2 levels, tap_state_t pid);
 
     int get_event_count() const;
-    //if no events are available, returns (2,2)
+    /// @brief Pop the next state from the queue (returns (2,2) if no events are available)
     Vector2 pop_next_state();
     
     std::optional<tap_event_t> get_next_event_internal();
@@ -71,10 +72,11 @@ class TapPatchBay : public Resource {
     bool has_pin(tap_label_t label) const;
     bool remove_pin(tap_label_t label);
 
-    /*
-    Attach all sensitive pins of `component` with label `label` to the patch bay.
-    Assumes `component.pins` is filled.
-    */
+    /**
+     * @brief Attach all sensitive pins of a component to the patch bay.
+     * 
+     * Assumes component.pins is filled.
+     */
     void attach_pins_internal(const tap_component_t &component, tap_label_t label);
     void detach_pins_internal(const tap_component_t &component, tap_label_t label);
 
@@ -82,11 +84,18 @@ class TapPatchBay : public Resource {
     TypedDictionary<tap_label_t, Vector2> all_pin_states() const;
     void set_pin_state(tap_label_t label, Vector2 new_state);
 
-    /*
-    Do not allow for external modification of pins.
-    */
+    /**
+     * @brief Get the internal pin representation.
+     * 
+     * Do not allow for external modification of pins.
+     */
     std::optional<tap_pin_t> get_pin_internal(tap_label_t label) const;
     tap_event_t *get_state_internal(tap_label_t label);
+
+    /**
+     * @brief Clear all pins and their states from the patch bay.
+     */
+    void clear_pins();
 
     TypedDictionary<tap_label_t, PackedInt64Array> get_all_pin_connections() const;
     

@@ -26,6 +26,7 @@ void TapSim::_bind_methods() {
 
   ClassDB::bind_method(D_METHOD("process_once"), &TapSim::process_once);
   ClassDB::bind_method(D_METHOD("process_to"), &TapSim::process_to);
+  ClassDB::bind_method(D_METHOD("clear"), &TapSim::clear);
 }
 
 Ref<TapNetwork> TapSim::get_network() const {
@@ -135,6 +136,11 @@ int TapSim::process_to(tap_time_t end_time) {
 void TapSim::push_event(tap_time_t time, AudioFrame state, tap_label_t pid) {
   patch_bay->get_queue_internal().insert(tap_event_t{time, state, pid, patch_bay->COMPONENT_MISSING}, time);
   latest_event_time = time > latest_event_time ? time : latest_event_time;
+}
+
+void TapSim::clear() {
+  patch_bay->clear_pins();
+  network->clear_components();
 }
 
 TapSim::TapSim() {
