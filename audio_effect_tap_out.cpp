@@ -1,6 +1,3 @@
-#include "core/math/math_funcs.h"
-#include "servers/audio/audio_server.h"
-
 #include "audio_effect_tap_out.h"
 
 void AudioEffectTapOut::_bind_methods() {

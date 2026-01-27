@@ -1,11 +1,9 @@
 
 #include "core/object/class_db.h"
 #include "core/math/audio_frame.h"
-#include "core/math/math_defs.h"
 
 #include "audio_effect_tap_in.h"
 #include "tap_circuit_types.h"
-#include "tap_patch_bay.h"
 #include "tap_sim.h"
 
 void AudioEffectTapIn::_bind_methods() {

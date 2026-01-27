@@ -1,9 +1,7 @@
 #pragma once
 
-#include "core/object/class_db.h"
 #include "servers/audio/audio_effect.h"
 #include "core/math/audio_frame.h"
-#include "core/math/vector2i.h"
 
 #include "tap_circuit_types.h"
 #include "tap_sim.h"
