@@ -29,10 +29,11 @@ class AudioEffectTapOutInstance : public AudioEffectInstance {
  * process schedule. If AudioEffectTapIn's are also using the same `simulator`, 
  * they should synchronize and produce a synthesizer.
  * 
- * @param simulator The simulator being processed by this effect.
- * @param output_pids The output pins of `simulator` that should be audible to the
- *  user.
- * @param live If true, the simulator is being processed.
+ * @param ls Wrap the simulator and `live` state, validating whether `live` can
+ * be set to true.
+ * @param executing When set to true, tries to set live to true and fails if
+ * live cannot be set to true. When true, the effect instance is processing
+ * `simulator`.
  * @param sample_skip The number of samples between simulation process calls.
  */
 class AudioEffectTapOut : public AudioEffect {
@@ -42,6 +43,7 @@ class AudioEffectTapOut : public AudioEffect {
 
   TapSimLiveSwitch ls;
 
+  bool executing = false;
   int sample_skip = 2;
 
   protected:
@@ -53,8 +55,7 @@ class AudioEffectTapOut : public AudioEffect {
     /**
      * @brief Find if any `inputs` are connected to param `output_pids` in the
      * `simulator`. Inputs should be all pins actively recieving events from 
-     * outside sources. If there is a connection, it might be smart to start
-     * solving the simulator using `set_live`.
+     * outside sources.
      */
     bool any_input_connected(PackedInt64Array input_pids);
 
@@ -66,6 +67,9 @@ class AudioEffectTapOut : public AudioEffect {
 
     bool get_live() const;
     void set_live(bool new_live);
+
+    bool get_executing() const;
+    void set_executing(bool new_executing);
 
     int get_sample_skip() const;
     void set_sample_skip(int new_sample_skip);

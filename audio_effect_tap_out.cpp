@@ -12,12 +12,16 @@ void AudioEffectTapOut::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_live"), &AudioEffectTapOut::get_live);
   ClassDB::bind_method(D_METHOD("set_live", "new_live"), &AudioEffectTapOut::set_live);
 
+  ClassDB::bind_method(D_METHOD("get_executing"), &AudioEffectTapOut::get_executing);
+  ClassDB::bind_method(D_METHOD("set_executing", "new_executing"), &AudioEffectTapOut::set_executing);
+
   ClassDB::bind_method(D_METHOD("get_sample_skip"), &AudioEffectTapOut::get_sample_skip);
   ClassDB::bind_method(D_METHOD("set_sample_skip", "new_sample_skip"), &AudioEffectTapOut::set_sample_skip);
 
   ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
   ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "output_pids"), "set_output_pids", "get_output_pids");
   ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live"), "set_live", "get_live");
+  ADD_PROPERTY(PropertyInfo(Variant::BOOL, "executing"), "set_executing", "get_executing");
   ADD_PROPERTY(PropertyInfo(Variant::INT, "sample_skip", PROPERTY_HINT_ENUM_SUGGESTION, "1,2,4"), "set_sample_skip", "get_sample_skip");
 }
 
@@ -47,6 +51,21 @@ bool AudioEffectTapOut::get_live() const {
 
 void AudioEffectTapOut::set_live(bool new_live) {
   ls.set_live(new_live);
+}
+
+bool AudioEffectTapOut::get_executing() const {
+  return executing;
+}
+
+void AudioEffectTapOut::set_executing(bool new_executing) {
+  if (executing) {
+    ls.set_live(true);
+    if (!ls.get_live()) {
+      return;
+    }
+  }
+
+  executing = new_executing;
 }
 
 int AudioEffectTapOut::get_sample_skip() const {
@@ -114,7 +133,10 @@ void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, Aud
   Ref<TapPatchBay> patch_bay = effect->get_simulator()->get_patch_bay();
   for (int i = 0; i < p_frame_count; i += effect->sample_skip) {
     tap_time_t time = total_time + i * effect->get_simulator()->get_tick_rate();
-    effect->get_simulator()->process_to(time);
+    
+    if (effect->executing) {
+      effect->get_simulator()->process_to(time);
+    }
 
     AudioFrame total;
     for (tap_label_t pid : effect->get_output_pids()) {
