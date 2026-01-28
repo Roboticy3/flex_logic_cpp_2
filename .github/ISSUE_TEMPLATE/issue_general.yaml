@@ -1,0 +1,27 @@
+name: General Issue
+description: Simple issue template to keep the repository homogenous
+labels: []
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: problem
+      description: What is the problem? Who does the problem effect?
+    validations:
+      required: true
+  
+  - type: textarea
+    id: tried
+    attributes:
+      label: tried
+      description: What have you already tried?
+    validations:
+      required: true
+  
+  - type: textarea
+    id: solution
+    attributes:
+      label: solution
+      description: What is a good first step towards solving this soon?
+    validations:
+      required: false
