@@ -2,157 +2,155 @@
 #include "core/object/object.h"
 
 void AudioEffectTapOut::_bind_methods() {
-  ClassDB::bind_method(D_METHOD("any_input_connected"), &AudioEffectTapOut::any_input_connected);
+	ClassDB::bind_method(D_METHOD("any_input_connected"), &AudioEffectTapOut::any_input_connected);
 
-  ClassDB::bind_method(D_METHOD("get_simulator"), &AudioEffectTapOut::get_simulator);
-  ClassDB::bind_method(D_METHOD("set_simulator", "new_simulator"), &AudioEffectTapOut::set_simulator);
+	ClassDB::bind_method(D_METHOD("get_simulator"), &AudioEffectTapOut::get_simulator);
+	ClassDB::bind_method(D_METHOD("set_simulator", "new_simulator"), &AudioEffectTapOut::set_simulator);
 
-  ClassDB::bind_method(D_METHOD("get_output_pids"), &AudioEffectTapOut::get_output_pids);
-  ClassDB::bind_method(D_METHOD("set_output_pids", "new_output_pids"), &AudioEffectTapOut::set_output_pids);
+	ClassDB::bind_method(D_METHOD("get_output_pids"), &AudioEffectTapOut::get_output_pids);
+	ClassDB::bind_method(D_METHOD("set_output_pids", "new_output_pids"), &AudioEffectTapOut::set_output_pids);
 
-  ClassDB::bind_method(D_METHOD("get_live"), &AudioEffectTapOut::get_live);
-  ClassDB::bind_method(D_METHOD("set_live", "new_live"), &AudioEffectTapOut::set_live);
+	ClassDB::bind_method(D_METHOD("get_live"), &AudioEffectTapOut::get_live);
+	ClassDB::bind_method(D_METHOD("set_live", "new_live"), &AudioEffectTapOut::set_live);
 
-  ClassDB::bind_method(D_METHOD("get_executing"), &AudioEffectTapOut::get_executing);
-  ClassDB::bind_method(D_METHOD("set_executing", "new_executing"), &AudioEffectTapOut::set_executing);
+	ClassDB::bind_method(D_METHOD("get_executing"), &AudioEffectTapOut::get_executing);
+	ClassDB::bind_method(D_METHOD("set_executing", "new_executing"), &AudioEffectTapOut::set_executing);
 
-  ClassDB::bind_method(D_METHOD("get_sample_skip"), &AudioEffectTapOut::get_sample_skip);
-  ClassDB::bind_method(D_METHOD("set_sample_skip", "new_sample_skip"), &AudioEffectTapOut::set_sample_skip);
+	ClassDB::bind_method(D_METHOD("get_sample_skip"), &AudioEffectTapOut::get_sample_skip);
+	ClassDB::bind_method(D_METHOD("set_sample_skip", "new_sample_skip"), &AudioEffectTapOut::set_sample_skip);
 
-  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
-  ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "output_pids"), "set_output_pids", "get_output_pids");
-  ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_live", "get_live");
-  ADD_PROPERTY(PropertyInfo(Variant::BOOL, "executing", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_executing", "get_executing");
-  ADD_PROPERTY(PropertyInfo(Variant::INT, "sample_skip", PROPERTY_HINT_ENUM_SUGGESTION, "1,2,4"), "set_sample_skip", "get_sample_skip");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "output_pids"), "set_output_pids", "get_output_pids");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_live", "get_live");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "executing", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_executing", "get_executing");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "sample_skip", PROPERTY_HINT_ENUM_SUGGESTION, "1,2,4"), "set_sample_skip", "get_sample_skip");
 }
 
 bool AudioEffectTapOut::any_input_connected(PackedInt64Array input_pids) {
-  return false;
+	return false;
 }
 
 Ref<TapSim> AudioEffectTapOut::get_simulator() const {
-  return ls.get_simulator();
+	return ls.get_simulator();
 }
 
 void AudioEffectTapOut::set_simulator(Ref<TapSim> new_simulator) {
-  ls.set_simulator(new_simulator);
+	ls.set_simulator(new_simulator);
 }
 
 PackedInt64Array AudioEffectTapOut::get_output_pids() const {
-  return ls.get_live_pids();
+	return ls.get_live_pids();
 }
 
 void AudioEffectTapOut::set_output_pids(PackedInt64Array new_output_pids) {
-  ls.set_live_pids(new_output_pids);
+	ls.set_live_pids(new_output_pids);
 }
 
 bool AudioEffectTapOut::get_live() const {
-  return ls.get_live();
+	return ls.get_live();
 }
 
 void AudioEffectTapOut::set_live(bool new_live) {
-  ls.set_live(new_live);
-  if (!ls.get_live()) {
-    executing = false;
-  }
+	ls.set_live(new_live);
+	if (!ls.get_live()) {
+		executing = false;
+	}
 }
 
 bool AudioEffectTapOut::get_executing() const {
-  return executing;
+	return executing;
 }
 
 void AudioEffectTapOut::set_executing(bool new_executing) {
-  if (executing) {
-    ls.set_live(true);
-    if (!ls.get_live()) {
-      return;
-    }
-  }
+	if (executing) {
+		ls.set_live(true);
+		if (!ls.get_live()) {
+			return;
+		}
+	}
 
-  executing = new_executing;
+	executing = new_executing;
 }
 
 int AudioEffectTapOut::get_sample_skip() const {
-  return sample_skip;
+	return sample_skip;
 }
 void AudioEffectTapOut::set_sample_skip(int new_sample_skip) {
-  if (new_sample_skip < 1 || 512 % new_sample_skip != 0) {
-    WARN_PRINT("Suggested sample skip does not divide 512, the typical batch count for audio processing. Expect phase issues.");
-  }
+	if (new_sample_skip < 1 || 512 % new_sample_skip != 0) {
+		WARN_PRINT("Suggested sample skip does not divide 512, the typical batch count for audio processing. Expect phase issues.");
+	}
 
-  if (new_sample_skip > 4) {
-    WARN_PRINT("Suggested sample skip would produce audio at a resolution under 10kHz at typical 44kHz audio processing. Expect choppiness");
-  }
+	if (new_sample_skip > 4) {
+		WARN_PRINT("Suggested sample skip would produce audio at a resolution under 10kHz at typical 44kHz audio processing. Expect choppiness");
+	}
 
-  sample_skip = new_sample_skip;
+	sample_skip = new_sample_skip;
 }
 
 Ref<AudioEffectInstance> AudioEffectTapOut::instantiate() {
-  Ref<AudioEffectTapOutInstance> instance;
-  instance.instantiate();
-  instance->effect = this;
-  return instance;
+	Ref<AudioEffectTapOutInstance> instance;
+	instance.instantiate();
+	instance->effect = this;
+	return instance;
 }
 
 void AudioEffectTapOutInstance::process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
-  if (effect->ls.get_live()) {
-    process_live(p_src_frames, p_dst_frames, p_frame_count);
-  }
-
-  /* Insanity check
-  const double frequency = 440.0;
-	const double sample_rate = AudioServer::get_singleton()->get_mix_rate();
-	const double phase_inc = 2.0 * Math::PI * frequency / sample_rate;
-
-	for (int i = 0; i < p_frame_count; i++) {
-		float sample = static_cast<float>(std::sin(phase));
-		phase += phase_inc;
-		if (phase > 2.0 * Math::PI)
-			phase -= 2.0 * Math::PI;
-
-		p_dst_frames[i].left = sample;
-		p_dst_frames[i].right = sample;
+	if (effect->ls.get_live()) {
+		process_live(p_src_frames, p_dst_frames, p_frame_count);
 	}
-  */
+
+	/* Insanity check
+	const double frequency = 440.0;
+	  const double sample_rate = AudioServer::get_singleton()->get_mix_rate();
+	  const double phase_inc = 2.0 * Math::PI * frequency / sample_rate;
+
+	  for (int i = 0; i < p_frame_count; i++) {
+		  float sample = static_cast<float>(std::sin(phase));
+		  phase += phase_inc;
+		  if (phase > 2.0 * Math::PI)
+			  phase -= 2.0 * Math::PI;
+
+		  p_dst_frames[i].left = sample;
+		  p_dst_frames[i].right = sample;
+	  }
+	*/
 }
 
 bool AudioEffectTapOutInstance::process_silence() const {
-  return true;
+	return true;
 }
 
 void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
+	tap_time_t target_time = total_time + p_frame_count * effect->get_simulator()->get_tick_rate();
 
-  tap_time_t target_time = total_time + p_frame_count * effect->get_simulator()->get_tick_rate();
+	if (effect->get_simulator()->get_latest_event_time() <= target_time) {
+		WARN_PRINT("Not enough events in simulator, skipping processing");
+		return;
+	}
 
-  if (effect->get_simulator()->get_latest_event_time() <= target_time) {
-    WARN_PRINT("Not enough events in simulator, skipping processing");
-    return;
-  }
+	//simulate the circuit
+	//technically simulating behind by one `process` call because `total_time`
+	//  isn't updated yet. But if this instance is synced properly with the input
+	//  instances, that's the only way to stop it from trying to read events that
+	//  don't exist yet. Should cause a negligible delay.
+	Ref<TapPatchBay> patch_bay = effect->get_simulator()->get_patch_bay();
+	for (int i = 0; i < p_frame_count; i += effect->sample_skip) {
+		tap_time_t time = total_time + i * effect->get_simulator()->get_tick_rate();
 
-  //simulate the circuit
-  //technically simulating behind by one `process` call because `total_time` 
-  //  isn't updated yet. But if this instance is synced properly with the input
-  //  instances, that's the only way to stop it from trying to read events that
-  //  don't exist yet. Should cause a negligible delay.
-  Ref<TapPatchBay> patch_bay = effect->get_simulator()->get_patch_bay();
-  for (int i = 0; i < p_frame_count; i += effect->sample_skip) {
-    tap_time_t time = total_time + i * effect->get_simulator()->get_tick_rate();
-    
-    if (effect->executing) {
-      effect->get_simulator()->process_to(time);
-    }
+		if (effect->executing) {
+			effect->get_simulator()->process_to(time);
+		}
 
-    AudioFrame total;
-    for (tap_label_t pid : effect->get_output_pids()) {
-      Vector2 pid_frame = patch_bay->get_pin_state(pid);
+		AudioFrame total;
+		for (tap_label_t pid : effect->get_output_pids()) {
+			Vector2 pid_frame = patch_bay->get_pin_state(pid);
 
-      //print_line("Pin " + itos(pid) + " state: ", (pid_frame.x), ", ", pid_frame.y, " time: ", time);
-      
-      total += AudioFrame(pid_frame.x, pid_frame.y);
-    }
-    p_dst_frames[i] = total;
-    
-  }
+			//print_line("Pin " + itos(pid) + " state: ", (pid_frame.x), ", ", pid_frame.y, " time: ", time);
 
-  total_time = target_time;
+			total += AudioFrame(pid_frame.x, pid_frame.y);
+		}
+		p_dst_frames[i] = total;
+	}
+
+	total_time = target_time;
 }
