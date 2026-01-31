@@ -1,6 +1,5 @@
 #pragma once
 
-#include "core/io/resource.h"
 #include "core/variant/variant.h"
 
 #include "tap_sim.h"
