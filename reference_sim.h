@@ -18,7 +18,7 @@ class ReferenceSim : public Resource {
   
   public:
     StringName get_reference_sim_name() const;
-    void set_reference_sim_name(const StringName &p_reference_sim_name);
+    void set_reference_sim_name(const StringName &new_reference_sim_name);
 
     static void initialize_reference_registry_internal();
     static void deinitialize_reference_registry_internal();

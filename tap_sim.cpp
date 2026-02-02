@@ -102,8 +102,8 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
 		//get the input state for the component,
 		Vector<const tap_event_t *> input;
 		input.reserve(component->pins.size());
-		for (tap_label_t pin : component->pins) {
-			input.push_back(patch_bay->get_state_internal(pin));
+		for (tap_label_t pid : component->pins) {
+			input.push_back(patch_bay->get_state_internal(pid));
 		}
 
 		//solve the component

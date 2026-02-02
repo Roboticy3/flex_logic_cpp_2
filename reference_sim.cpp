@@ -31,13 +31,14 @@ StringName ReferenceSim::get_reference_sim_name() const {
   return reference_sim_name;
 }
 
-void ReferenceSim::set_reference_sim_name(const StringName& name) {
-  if (!reference_registry.has(name)) {
-    ERR_PRINT("Reference sim name '" + name + "' not found in registry");
+void ReferenceSim::set_reference_sim_name(const StringName& new_reference_sim_name) {
+  if (!reference_registry.has(new_reference_sim_name)) {
+    ERR_PRINT("Reference sim name '" + new_reference_sim_name + "' not found in registry");
     return;
   }
 
-  reference_sim_name = name;
+  reference_sim_name = new_reference_sim_name;
+  reference_sim_func = reference_registry[new_reference_sim_name];
 }
 
 void reference_mixer_no_peak(Vector<AudioFrame> &solution, const Vector<AudioFrame> &problem) {
@@ -50,4 +51,14 @@ void reference_mixer_no_peak(Vector<AudioFrame> &solution, const Vector<AudioFra
 
   solution.append(mix);
 }
+
+void ReferenceSim::initialize_reference_registry_internal() {
+  reference_registry["mixer_no_peak"] = reference_mixer_no_peak;
+  print_line(vformat("ReferenceSim: Registered %d reference functions.", reference_registry.size()));
+}
+
+void ReferenceSim::deinitialize_reference_registry_internal() {
+  reference_registry.clear();
+}
+
 

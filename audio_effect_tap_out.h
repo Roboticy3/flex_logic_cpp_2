@@ -41,7 +41,8 @@ class AudioEffectTapOut : public AudioEffect {
 
 	friend class AudioEffectTapOutInstance;
 
-	TapSimLiveSwitch ls;
+	TapSimLiveSwitch ls_out;
+	TapSimLiveSwitch ls_in;
 
 	bool executing = false;
 	int sample_skip = 2;
@@ -57,13 +58,16 @@ public:
 	 * `simulator`. Inputs should be all pins actively recieving events from
 	 * outside sources.
 	 */
-	bool any_input_connected(PackedInt64Array input_pids);
+	bool any_input_connected();
 
 	Ref<TapSim> get_simulator() const;
 	void set_simulator(Ref<TapSim> new_simulator);
 
 	PackedInt64Array get_output_pids() const;
 	void set_output_pids(PackedInt64Array new_output_pids);
+
+	PackedInt64Array get_input_pids() const;
+	void set_input_pids(PackedInt64Array new_input_pids);
 
 	bool get_live() const;
 	void set_live(bool new_live);

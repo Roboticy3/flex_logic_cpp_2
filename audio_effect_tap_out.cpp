@@ -10,6 +10,9 @@ void AudioEffectTapOut::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_output_pids"), &AudioEffectTapOut::get_output_pids);
 	ClassDB::bind_method(D_METHOD("set_output_pids", "new_output_pids"), &AudioEffectTapOut::set_output_pids);
 
+	ClassDB::bind_method(D_METHOD("get_input_pids"), &AudioEffectTapOut::get_input_pids);
+	ClassDB::bind_method(D_METHOD("set_input_pids", "new_input_pids"), &AudioEffectTapOut::set_input_pids);
+
 	ClassDB::bind_method(D_METHOD("get_live"), &AudioEffectTapOut::get_live);
 	ClassDB::bind_method(D_METHOD("set_live", "new_live"), &AudioEffectTapOut::set_live);
 
@@ -21,38 +24,49 @@ void AudioEffectTapOut::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "output_pids"), "set_output_pids", "get_output_pids");
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "input_pids"), "set_input_pids", "get_input_pids");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_live", "get_live");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "executing", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_executing", "get_executing");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "sample_skip", PROPERTY_HINT_ENUM_SUGGESTION, "1,2,4"), "set_sample_skip", "get_sample_skip");
 }
 
-bool AudioEffectTapOut::any_input_connected(PackedInt64Array input_pids) {
+bool AudioEffectTapOut::any_input_connected() {
 	return false;
 }
 
 Ref<TapSim> AudioEffectTapOut::get_simulator() const {
-	return ls.get_simulator();
+	return ls_out.get_simulator();
 }
 
 void AudioEffectTapOut::set_simulator(Ref<TapSim> new_simulator) {
-	ls.set_simulator(new_simulator);
+	ls_out.set_simulator(new_simulator);
+	ls_in.set_simulator(new_simulator);
 }
 
 PackedInt64Array AudioEffectTapOut::get_output_pids() const {
-	return ls.get_live_pids();
+	return ls_out.get_live_pids();
 }
 
 void AudioEffectTapOut::set_output_pids(PackedInt64Array new_output_pids) {
-	ls.set_live_pids(new_output_pids);
+	ls_out.set_live_pids(new_output_pids);
+}
+
+PackedInt64Array AudioEffectTapOut::get_input_pids() const {
+	return ls_in.get_live_pids();
+}
+
+void AudioEffectTapOut::set_input_pids(PackedInt64Array new_input_pids) {
+	ls_in.set_live_pids(new_input_pids);
 }
 
 bool AudioEffectTapOut::get_live() const {
-	return ls.get_live();
+	return ls_out.get_live() && ls_in.get_live();
 }
 
 void AudioEffectTapOut::set_live(bool new_live) {
-	ls.set_live(new_live);
-	if (!ls.get_live()) {
+	ls_out.set_live(new_live);
+	ls_in.set_live(new_live);
+	if (!get_live()) {
 		executing = false;
 	}
 }
@@ -63,8 +77,10 @@ bool AudioEffectTapOut::get_executing() const {
 
 void AudioEffectTapOut::set_executing(bool new_executing) {
 	if (executing) {
-		ls.set_live(true);
-		if (!ls.get_live()) {
+		ls_out.set_live(true);
+		ls_in.set_live(true);
+		if (get_live()) {
+			executing = false;
 			return;
 		}
 	}
@@ -95,7 +111,7 @@ Ref<AudioEffectInstance> AudioEffectTapOut::instantiate() {
 }
 
 void AudioEffectTapOutInstance::process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
-	if (effect->ls.get_live()) {
+	if (effect->get_live()) {
 		process_live(p_src_frames, p_dst_frames, p_frame_count);
 	}
 
