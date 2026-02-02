@@ -5,13 +5,13 @@
 #include "core/math/audio_frame.h"
 #include "core/string/string_name.h"
 
-using ReferenceSimFunc = void(*)(Vector<AudioFrame> &solution,const Vector<AudioFrame> &problem);
+using ReferenceErrorFunc = AudioFrame(*)(const Vector<AudioFrame> &solution,const Vector<AudioFrame> &problem);
 
 class ReferenceSim : public Resource {
   GDCLASS(ReferenceSim, Resource)
 
   StringName reference_sim_name;
-  ReferenceSimFunc reference_sim_func;
+  ReferenceErrorFunc reference_sim_func;
 
   protected:
     static void _bind_methods();
@@ -23,5 +23,8 @@ class ReferenceSim : public Resource {
     static void initialize_reference_registry_internal();
     static void deinitialize_reference_registry_internal();
 
-    static HashMap<StringName, ReferenceSimFunc> reference_registry;
+    Vector2 stereo_error(PackedVector2Array solution, PackedVector2Array problem) const;
+    AudioFrame stereo_error_internal(const Vector<AudioFrame> &solution, const Vector<AudioFrame> &problem) const;
+
+    static HashMap<StringName, ReferenceErrorFunc> reference_registry;
 };
