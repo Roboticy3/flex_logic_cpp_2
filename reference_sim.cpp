@@ -26,7 +26,7 @@ void ReferenceSim::_bind_methods() {
   ClassDB::bind_method(D_METHOD("stereo_error", "solution", "problem"), &ReferenceSim::stereo_error);
 
   ClassDB::bind_static_method("ReferenceSim", D_METHOD("initialize_reference_registry"), &ReferenceSim::initialize_reference_registry_internal);
-  ClassDB::bind_static_method("ReferenceSim", D_METHOD("deinitialize_reference_registry"), &ReferenceSim::deinitialize_reference_registry_internal);
+  ClassDB::bind_static_method("ReferenceSim", D_METHOD("deinitialize_reference_registry"), &ReferenceSim::uninitialize_reference_registry_internal);
 }
 
 StringName ReferenceSim::get_reference_sim_name() const {
@@ -81,7 +81,7 @@ void ReferenceSim::initialize_reference_registry_internal() {
   print_line(vformat("ReferenceSim: Registered %d reference functions.", reference_registry.size()));
 }
 
-void ReferenceSim::deinitialize_reference_registry_internal() {
+void ReferenceSim::uninitialize_reference_registry_internal() {
   reference_registry.clear();
 }
 
