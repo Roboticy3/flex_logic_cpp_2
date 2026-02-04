@@ -197,6 +197,15 @@ Vector2 TapPatchBay::get_pin_state(tap_label_t label) const {
 	return Vector2(frame.left, frame.right);
 }
 
+AudioFrame TapPatchBay::get_pin_state_internal(tap_label_t label) const {
+	if (!pins.label_get(label)) {
+		print_error("Attempted to get state of nonexistant pin " + itos(label));
+		return AudioFrame(get_state_missing().x, get_state_missing().y);
+	}
+
+	return pin_states[label].state;
+}
+
 PackedInt64Array TapPatchBay::get_pin_connections(tap_label_t label) const {
 	if (!pins.label_get(label)) {
 		print_error("Attempted to get connections of nonexistant pin " + itos(label));

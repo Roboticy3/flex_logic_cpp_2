@@ -23,7 +23,12 @@ void ReferenceSim::_bind_methods() {
   
   ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "reference_sim_name", PROPERTY_HINT_ENUM, hint), "set_reference_sim_name", "get_reference_sim_name");
 
-  ClassDB::bind_method(D_METHOD("stereo_error", "solution", "problem"), &ReferenceSim::stereo_error);
+
+  ClassDB::bind_method(D_METHOD("get_total_error"), &ReferenceSim::get_total_error);
+  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "total_error", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "", "get_total_error");
+
+  ClassDB::bind_method(D_METHOD("measure_error", "solution", "problem"), &ReferenceSim::measure_error);
+  ClassDB::bind_method(D_METHOD("reset"), &ReferenceSim::reset);
 
   ClassDB::bind_static_method("ReferenceSim", D_METHOD("initialize_reference_registry"), &ReferenceSim::initialize_reference_registry_internal);
   ClassDB::bind_static_method("ReferenceSim", D_METHOD("deinitialize_reference_registry"), &ReferenceSim::uninitialize_reference_registry_internal);
@@ -43,26 +48,38 @@ void ReferenceSim::set_reference_sim_name(const StringName& new_reference_sim_na
   reference_sim_func = reference_registry[new_reference_sim_name];
 }
 
-Vector2 ReferenceSim::stereo_error(PackedVector2Array solution, PackedVector2Array problem) const {
-  Vector<AudioFrame> solution_vec;
+Vector2 ReferenceSim::get_total_error() const {
+  return Vector2(total_error.l, total_error.r);
+}
+
+void ReferenceSim::reset() {
+  total_error = AudioFrame(0, 0);
+}
+
+Vector2 ReferenceSim::measure_error(PackedVector2Array solution, PackedVector2Array problem) {
+  LocalVector<AudioFrame> solution_vec;
   for (int i = 0; i < solution.size(); i++) {
-    solution_vec.append(AudioFrame(solution[i].x, solution[i].y));
+    solution_vec.push_back(AudioFrame(solution[i].x, solution[i].y));
   }
   
-  Vector<AudioFrame> problem_vec;
+  LocalVector<AudioFrame> problem_vec;
   for (int i = 0; i < problem.size(); i++) {
-    problem_vec.append(AudioFrame(problem[i].x, problem[i].y));
+    problem_vec.push_back(AudioFrame(problem[i].x, problem[i].y));
   }
   
-  AudioFrame error = stereo_error_internal(solution_vec, problem_vec);
+  AudioFrame error = measure_error_internal(solution_vec, problem_vec, 1.0f);
   return Vector2(error.l, error.r);
 }
 
-AudioFrame ReferenceSim::stereo_error_internal(const Vector<AudioFrame> &solution, const Vector<AudioFrame> &problem) const {
-  return reference_sim_func(solution, problem);
+AudioFrame ReferenceSim::measure_error_internal(const LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem, float delta_time) {
+  AudioFrame error = reference_sim_func(solution, problem);
+  error.l = error.l < 0 ? -error.l : error.l;
+  error.r = error.r < 0 ? -error.r : error.r;
+  total_error += AudioFrame(error.l * delta_time, error.r * delta_time);
+  return error;
 }
 
-AudioFrame reference_mixer_no_peak(const Vector<AudioFrame> &solution, const Vector<AudioFrame> &problem) {
+AudioFrame reference_mixer_no_peak(const LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
 
   if (solution.is_empty()) {
     return AudioFrame(Math::INF, Math::INF);

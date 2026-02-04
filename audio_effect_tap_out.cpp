@@ -1,5 +1,8 @@
-#include "audio_effect_tap_out.h"
 #include "core/object/object.h"
+#include "core/variant/variant.h"
+#include "servers/audio/audio_server.h"
+
+#include "audio_effect_tap_out.h"
 
 void AudioEffectTapOut::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("any_input_connected"), &AudioEffectTapOut::any_input_connected);
@@ -19,9 +22,6 @@ void AudioEffectTapOut::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_live"), &AudioEffectTapOut::get_live);
 	ClassDB::bind_method(D_METHOD("set_live", "new_live"), &AudioEffectTapOut::set_live);
 
-	ClassDB::bind_method(D_METHOD("get_executing"), &AudioEffectTapOut::get_executing);
-	ClassDB::bind_method(D_METHOD("set_executing", "new_executing"), &AudioEffectTapOut::set_executing);
-
 	ClassDB::bind_method(D_METHOD("get_sample_skip"), &AudioEffectTapOut::get_sample_skip);
 	ClassDB::bind_method(D_METHOD("set_sample_skip", "new_sample_skip"), &AudioEffectTapOut::set_sample_skip);
 
@@ -31,7 +31,6 @@ void AudioEffectTapOut::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "reference_sim", PROPERTY_HINT_RESOURCE_TYPE, "ReferenceSim"), "set_reference_sim", "get_reference_sim");
 	
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_live", "get_live");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "executing", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_executing", "get_executing");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "sample_skip", PROPERTY_HINT_ENUM_SUGGESTION, "1,2,4"), "set_sample_skip", "get_sample_skip");
 }
 
@@ -79,26 +78,6 @@ bool AudioEffectTapOut::get_live() const {
 void AudioEffectTapOut::set_live(bool new_live) {
 	ls_out.set_live(new_live);
 	ls_in.set_live(new_live);
-	if (!get_live()) {
-		executing = false;
-	}
-}
-
-bool AudioEffectTapOut::get_executing() const {
-	return executing;
-}
-
-void AudioEffectTapOut::set_executing(bool new_executing) {
-	if (executing) {
-		ls_out.set_live(true);
-		ls_in.set_live(true);
-		if (get_live()) {
-			executing = false;
-			return;
-		}
-	}
-
-	executing = new_executing;
 }
 
 int AudioEffectTapOut::get_sample_skip() const {
@@ -120,6 +99,12 @@ Ref<AudioEffectInstance> AudioEffectTapOut::instantiate() {
 	Ref<AudioEffectTapOutInstance> instance;
 	instance.instantiate();
 	instance->effect = this;
+
+	instance->inputs.resize(get_input_pids().size());
+	instance->outputs.resize(get_output_pids().size());
+
+	instance->mix_rate = AudioServer::get_singleton()->get_mix_rate();
+
 	return instance;
 }
 
@@ -166,17 +151,30 @@ void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, Aud
 	for (int i = 0; i < p_frame_count; i += effect->sample_skip) {
 		tap_time_t time = total_time + i * effect->get_simulator()->get_tick_rate();
 
-		if (effect->executing) {
-			effect->get_simulator()->process_to(time);
+		const PackedInt64Array &input_pids = effect->get_input_pids();
+		for (int i = 0; i < input_pids.size(); i++) {
+			inputs[i] = patch_bay->get_pin_state_internal(input_pids[i]);
+		}
+
+		effect->get_simulator()->process_to(time);
+
+		const PackedInt64Array &output_pids = effect->get_output_pids();
+		for (int i = 0; i < output_pids.size(); i++) {
+			outputs[i] = patch_bay->get_pin_state_internal(output_pids[i]);
+		}
+
+		Ref<ReferenceSim> reference_sim = effect->get_reference_sim();
+		if (reference_sim.is_valid()) {
+			reference_sim->measure_error_internal(outputs, inputs, 1.0f / mix_rate);
 		}
 
 		AudioFrame total;
 		for (tap_label_t pid : effect->get_output_pids()) {
-			Vector2 pid_frame = patch_bay->get_pin_state(pid);
-
-			//print_line("Pin " + itos(pid) + " state: ", (pid_frame.x), ", ", pid_frame.y, " time: ", time);
-
-			total += AudioFrame(pid_frame.x, pid_frame.y);
+			AudioFrame frame = patch_bay->get_pin_state_internal(pid);
+			if (Vector2i(frame.l, frame.r) == patch_bay->get_state_missing()) {
+				continue;
+			}
+			total += frame;
 		}
 		p_dst_frames[i] = total;
 	}

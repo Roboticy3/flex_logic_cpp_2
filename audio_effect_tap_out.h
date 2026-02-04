@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/math/audio_frame.h"
+#include "core/templates/local_vector.h"
 #include "servers/audio/audio_effect.h"
 
 #include "tap_circuit_types.h"
@@ -8,6 +9,21 @@
 #include "tap_sim_live_switch.h"
 #include "reference_sim.h"
 
+/**
+ * @brief AudioEffectInstance that solves the circuit on its audio process
+ * schedule. If AudioEffectTapIn's are also using the same `simulator`, they
+ * should synchronize and produce a synthesizer.
+ * 
+ * @param effect A reference to the AudioEffectTapOut that spawned this instance
+ * @param total_time The total ticks passed in simulation time since the
+ * creation of this effect. Simulation will wait until inputs have passed this
+ * time.
+ * @param phase Unused.
+ * @param inputs The last recorded input state right before simulation. Should
+ * not change size after construction.
+ * @param outputs The outputs of the instance. Should not change size after
+ * construction.
+ */
 class AudioEffectTapOutInstance : public AudioEffectInstance {
 	GDCLASS(AudioEffectTapOutInstance, AudioEffectInstance)
 
@@ -17,6 +33,10 @@ class AudioEffectTapOutInstance : public AudioEffectInstance {
 
 	tap_time_t total_time = 0;
 	double phase = 0.0;
+
+	LocalVector<AudioFrame> inputs;
+	LocalVector<AudioFrame> outputs;
+	int mix_rate;
 
 public:
 	virtual void process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) override;
@@ -32,9 +52,6 @@ public:
  *
  * @param ls Wrap the simulator and `live` state, validating whether `live` can
  * be set to true.
- * @param executing When set to true, tries to set live to true and fails if
- * live cannot be set to true. When true, the effect instance is processing
- * `simulator`.
  * @param sample_skip The number of samples between simulation process calls.
  */
 class AudioEffectTapOut : public AudioEffect {
@@ -46,7 +63,6 @@ class AudioEffectTapOut : public AudioEffect {
 	TapSimLiveSwitch ls_in;
 	Ref<ReferenceSim> reference_sim;
 
-	bool executing = false;
 	int sample_skip = 2;
 
 protected:
@@ -76,9 +92,6 @@ public:
 
 	bool get_live() const;
 	void set_live(bool new_live);
-
-	bool get_executing() const;
-	void set_executing(bool new_executing);
 
 	int get_sample_skip() const;
 	void set_sample_skip(int new_sample_skip);
