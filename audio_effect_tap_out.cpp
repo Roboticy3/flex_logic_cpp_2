@@ -13,6 +13,9 @@ void AudioEffectTapOut::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_input_pids"), &AudioEffectTapOut::get_input_pids);
 	ClassDB::bind_method(D_METHOD("set_input_pids", "new_input_pids"), &AudioEffectTapOut::set_input_pids);
 
+	ClassDB::bind_method(D_METHOD("get_reference_sim"), &AudioEffectTapOut::get_reference_sim);
+	ClassDB::bind_method(D_METHOD("set_reference_sim", "new_reference_sim"), &AudioEffectTapOut::set_reference_sim);
+
 	ClassDB::bind_method(D_METHOD("get_live"), &AudioEffectTapOut::get_live);
 	ClassDB::bind_method(D_METHOD("set_live", "new_live"), &AudioEffectTapOut::set_live);
 
@@ -25,6 +28,8 @@ void AudioEffectTapOut::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "output_pids"), "set_output_pids", "get_output_pids");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "input_pids"), "set_input_pids", "get_input_pids");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "reference_sim", PROPERTY_HINT_RESOURCE_TYPE, "ReferenceSim"), "set_reference_sim", "get_reference_sim");
+	
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_live", "get_live");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "executing", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_executing", "get_executing");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "sample_skip", PROPERTY_HINT_ENUM_SUGGESTION, "1,2,4"), "set_sample_skip", "get_sample_skip");
@@ -57,6 +62,14 @@ PackedInt64Array AudioEffectTapOut::get_input_pids() const {
 
 void AudioEffectTapOut::set_input_pids(PackedInt64Array new_input_pids) {
 	ls_in.set_live_pids(new_input_pids);
+}
+
+Ref<ReferenceSim> AudioEffectTapOut::get_reference_sim() const {
+	return reference_sim;
+}
+
+void AudioEffectTapOut::set_reference_sim(Ref<ReferenceSim> new_reference_sim) {
+	reference_sim = new_reference_sim;
 }
 
 bool AudioEffectTapOut::get_live() const {
