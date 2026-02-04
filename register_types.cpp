@@ -1,13 +1,14 @@
 #include "core/object/class_db.h"
 
-#include "register_types.h"
-#include "tap_component_type.h"
-#include "tap_patch_bay.h"
-#include "tap_network.h"
-#include "tap_sim.h"
+#include "audio_effect_tap_debugger.h"
 #include "audio_effect_tap_in.h"
 #include "audio_effect_tap_out.h"
-#include "audio_effect_tap_debugger.h"
+#include "register_types.h"
+#include "tap_component_type.h"
+#include "tap_network.h"
+#include "tap_patch_bay.h"
+#include "tap_sim.h"
+#include "reference_sim.h"
 
 void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
@@ -17,13 +18,15 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	//initialize TapComponentType before registry so the drop down menu loads
 	//correctly.
 	TapComponentType::initialize_solver_registry_internal();
+	ReferenceSim::initialize_reference_registry_internal();
 
 	ClassDB::register_class<TapFrame>();
 	ClassDB::register_class<TapComponentType>();
-	
+
 	ClassDB::register_class<TapPatchBay>();
 	ClassDB::register_class<TapNetwork>();
 	ClassDB::register_class<TapSim>();
+	ClassDB::register_class<ReferenceSim>();
 
 	ClassDB::register_class<AudioEffectTapIn>();
 	ClassDB::register_class<AudioEffectTapInInstance>();
@@ -41,4 +44,5 @@ void uninitialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	}
 
 	TapComponentType::uninitialize_solver_registry_internal();
+	ReferenceSim::uninitialize_reference_registry_internal();
 }
