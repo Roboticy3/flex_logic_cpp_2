@@ -125,7 +125,7 @@ void none_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, ta
 	// ¯\_(ツ)_/¯
 }
 
-void adder_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
+void mixer_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
 	//add in float space to act more like a mixxer than a binary adder
 	AudioFrame frame0 = pins[0]->state;
 	AudioFrame frame1 = pins[1]->state;
@@ -162,7 +162,7 @@ void TapComponentType::initialize_solver_registry_internal() {
 	solver_registry.clear();
 	solver_registry.insert("wire", &wire_solver);
 	solver_registry.insert("none", &none_solver);
-	solver_registry.insert("adder", &adder_solver);
+	solver_registry.insert("mixer", &mixer_solver);
 	print_line(vformat("TapComponentType: Registered %d solver functions.", TapComponentType::solver_registry.size()));
 }
 
