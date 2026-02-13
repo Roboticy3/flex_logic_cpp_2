@@ -9,6 +9,7 @@
 #include "tap_patch_bay.h"
 #include "tap_sim.h"
 #include "reference_sim.h"
+#include "audio_stream_tap_probe.h"
 
 void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
@@ -36,6 +37,9 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<AudioEffectTapDebugger>();
 	ClassDB::register_class<AudioEffectTapDebuggerInstance>();
 	ClassDB::register_class<AudioEffectTapDebuggerQuery>();
+	
+	ClassDB::register_class<AudioStreamTapProbe>();
+	ClassDB::register_class<AudioStreamTapProbePlayback>();
 }
 
 void uninitialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {

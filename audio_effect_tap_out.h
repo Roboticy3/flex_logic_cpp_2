@@ -9,6 +9,8 @@
 #include "tap_sim_live_switch.h"
 #include "reference_sim.h"
 
+class AudioEffectTapOut;
+
 /**
  * @brief AudioEffectInstance that solves the circuit on its audio process
  * schedule. If AudioEffectTapIn's are also using the same `simulator`, they

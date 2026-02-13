@@ -6,6 +6,8 @@
 #include "tap_circuit_types.h"
 #include "tap_sim.h"
 
+class AudioEffectTapIn;
+
 /**
  * @brief Reference an AudioEffectTapIn and execute on audio using its
  *  parameters.

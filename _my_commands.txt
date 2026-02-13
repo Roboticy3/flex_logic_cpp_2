@@ -1,0 +1,12 @@
+debug (more compiler output, gdb-debuggable with msys):
+  scons use_mingw=yes debug_symbols=yes dev_build=yes separate_debug_symbols=yes
+
+quick (faster compile):
+  mkdir ./cache/quick
+  scons dev_build=no compiledb=True cache_path=.cache/quick cache_limit=2
+
+debug editor with gdb:
+  gdb --args .\bin\godot.windows.editor.dev.x86_64.exe ..\..\moon-science\project.godot
+
+debug scene with gdb:
+  gdb --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science mockup\mockup_grid.tscn

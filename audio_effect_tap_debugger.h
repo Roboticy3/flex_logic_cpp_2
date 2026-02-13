@@ -9,6 +9,8 @@
 #include "tap_sim.h"
 #include "tap_sim_live_switch.h"
 
+class AudioEffectTapDebugger;
+
 /**
  * @brief A statistical snapshot of some amount of simulation time in an
  * AudioEffectTapDebuggerInstance, recovered from AudioEffectTapDebugger using
