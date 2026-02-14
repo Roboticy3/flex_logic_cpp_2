@@ -5,6 +5,7 @@
 
 #include "tap_circuit_types.h"
 #include "tap_sim.h"
+#include "tap_sim_live_switch.h"
 
 class AudioEffectTapIn;
 
@@ -62,11 +63,10 @@ class AudioEffectTapIn : public AudioEffect {
 
 	friend class AudioEffectTapInInstance;
 
-	Ref<TapSim> simulator;
 	tap_sample_t activation_delta = 0.0;
-	tap_label_t pid = 0;
+	
+	TapSimLiveSwitch ls_in;
 
-	bool line_in = true;
 	bool line_out = false;
 
 	int sample_skip = 2;
@@ -94,6 +94,4 @@ public:
 
 	int get_sample_skip() const;
 	void set_sample_skip(int new_sample_skip);
-
-	AudioEffectTapIn();
 };

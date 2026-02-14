@@ -1,8 +1,8 @@
 #pragma once
 
-#include "core/object/class_db.h"
+#include <mutex>
+
 #include "core/object/ref_counted.h"
-#include "scene/main/node.h"
 
 #include "tap_network.h"
 #include "tap_patch_bay.h"
@@ -18,6 +18,9 @@ class TapSim : public Resource {
 	Ref<TapNetwork> network;
 	/// @brief Currently, network composes patch bay, but don't want to rely on that
 	Ref<TapPatchBay> patch_bay;
+
+	// Mutex used by audio effects for thread-safe access to the simulator.
+	mutable std::mutex mutex;
 
 	int tick_rate = 1024;
 	tap_time_t latest_event_time = 0;
@@ -79,6 +82,11 @@ public:
 	 * @param pid The process label ID
 	 */
 	void push_event(tap_time_t time, AudioFrame state, tap_label_t pid);
+
+	/**
+	 * @brief Mutex getter so Audio processes can make their own locks for batch calls.
+	 */
+	std::mutex &get_mutex() const;
 
 	/**
 	 * @brief Automatically set up a simulator with a minimally configured network + patch bay.

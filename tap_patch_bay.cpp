@@ -229,6 +229,7 @@ tap_event_t *TapPatchBay::get_state_internal(tap_label_t label) {
 }
 
 void TapPatchBay::clear_pins() {
+	queue.reset();
 	pins.clear();
 	pin_states.clear();
 }

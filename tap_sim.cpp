@@ -1,4 +1,6 @@
+#include <mutex>
 #include <optional>
+#include <iostream>
 
 #include "core/object/class_db.h"
 
@@ -69,6 +71,7 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
 	std::optional<tap_pin_t> pin = patch_bay->get_pin_internal(event.pid);
 	tap_event_t *state = patch_bay->get_state_internal(event.pid);
 
+	//shouldn't need these checks later - assume the circuit is well-formed from outside
 	if (!pin.has_value()) {
 		ERR_PRINT(String("Propogated event on bad pin id ") + itos(event.pid));
 		return;
@@ -94,6 +97,7 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
 
 		//since components cannot be modified outisde of the interface, this should never happen
 		if (!component.has_value()) {
+			ERR_PRINT(String("Propogated event on bad component id ") + itos(cid));
 			continue;
 		}
 
@@ -103,7 +107,9 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
 		Vector<const tap_event_t *> input;
 		input.reserve(component->pins.size());
 		for (tap_label_t pid : component->pins) {
-			input.push_back(patch_bay->get_state_internal(pid));
+
+			tap_event_t *component_state = patch_bay->get_state_internal(pid);
+			input.push_back(component_state);
 		}
 
 		//solve the component
@@ -138,8 +144,13 @@ void TapSim::push_event(tap_time_t time, AudioFrame state, tap_label_t pid) {
 }
 
 void TapSim::clear() {
+	std::lock_guard<std::mutex> lock(mutex);
 	patch_bay->clear_pins();
 	network->clear_components();
+}
+
+std::mutex &TapSim::get_mutex() const {
+	return mutex;
 }
 
 TapSim::TapSim() {
