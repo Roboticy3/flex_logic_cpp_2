@@ -1,15 +1,28 @@
 
 #include "core/object/object.h"
+#include "core/variant/variant.h"
 #include "scene/2d/audio_stream_player_2d.h"
 #include "servers/audio/audio_stream.h"
+#include "tap_sim_live_switch.h"
+
+class AudioStreamTapProbePlayback;
 
 class AudioStreamTapProbe : public AudioStream {
   GDCLASS(AudioStreamTapProbe, AudioStream)
+	friend class AudioStreamTapProbePlayback;
+
+	TapSimLiveSwitch ls_out;
 
   protected:
     static void _bind_methods();
 
   public:
+		Ref<TapSim> get_simulator();
+		void set_simulator(Ref<TapSim> new_sim);
+
+		PackedInt64Array get_output_pids();
+		void set_output_pids(PackedInt64Array pids);
+
     virtual Ref<AudioStreamPlayback> instantiate_playback() override;
     
 };
@@ -17,8 +30,6 @@ class AudioStreamTapProbe : public AudioStream {
 class AudioStreamTapProbePlayback : public AudioStreamPlaybackResampled {
 	GDCLASS(AudioStreamTapProbePlayback, AudioStreamPlaybackResampled);
 	friend class AudioStreamTapProbe;
-
-	bool active = false;
 
   AudioStreamTapProbe* stream = nullptr;
 	
@@ -33,10 +44,13 @@ protected:
 	virtual double get_playback_position() const override;
 
 public:
+	//read out the simulator contents
 	virtual int mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) override;
 
+	//try to set the live state of the live switch.
 	virtual void start(double p_from_pos = 0.0) override;
 	virtual void stop() override;
+
 	virtual bool is_playing() const override;
 
 	virtual int get_loop_count() const override; //times it looped

@@ -1,0 +1,6 @@
+start
+b AudioEffectTapInInstance::process_line_in
+b AudioEffectTapOutInstance::process_live
+b TapSim::process_to
+b TapSim::push_event
+c

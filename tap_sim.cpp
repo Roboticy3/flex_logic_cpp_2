@@ -1,6 +1,5 @@
 #include <mutex>
 #include <optional>
-#include <iostream>
 
 #include "core/object/class_db.h"
 
@@ -144,12 +143,12 @@ void TapSim::push_event(tap_time_t time, AudioFrame state, tap_label_t pid) {
 }
 
 void TapSim::clear() {
-	std::lock_guard<std::mutex> lock(mutex);
+	std::lock_guard<std::recursive_mutex> lock(mutex);
 	patch_bay->clear_pins();
 	network->clear_components();
 }
 
-std::mutex &TapSim::get_mutex() const {
+std::recursive_mutex &TapSim::get_mutex() const {
 	return mutex;
 }
 

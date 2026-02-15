@@ -20,7 +20,7 @@ class TapSim : public Resource {
 	Ref<TapPatchBay> patch_bay;
 
 	// Mutex used by audio effects for thread-safe access to the simulator.
-	mutable std::mutex mutex;
+	mutable std::recursive_mutex mutex;
 
 	int tick_rate = 1024;
 	tap_time_t latest_event_time = 0;
@@ -86,7 +86,7 @@ public:
 	/**
 	 * @brief Mutex getter so Audio processes can make their own locks for batch calls.
 	 */
-	std::mutex &get_mutex() const;
+	std::recursive_mutex &get_mutex() const;
 
 	/**
 	 * @brief Automatically set up a simulator with a minimally configured network + patch bay.

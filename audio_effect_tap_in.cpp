@@ -1,4 +1,3 @@
-#include <mutex>
 
 #include "core/math/audio_frame.h"
 #include "core/object/class_db.h"
@@ -109,16 +108,7 @@ void AudioEffectTapInInstance::process(const AudioFrame *p_src_frames, AudioFram
 
 void AudioEffectTapInInstance::process_line_in(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 	
-	std::mutex &mutex = effect->get_simulator()->get_mutex();
-	
-	if (!mutex.try_lock()) {
-		WARN_PRINT("Failed to lock simulator mutex, skipping processing");
-
-		//Zero out the audio in this case
-		for (int i = 0; i < p_frame_count; i++) {
-			p_dst_frames[i] = AudioFrame(0.0, 0.0);
-		}
-
+	if (!effect->ls_in.try_lock(0, p_dst_frames, p_frame_count)) {
 		return;
 	}
 	
@@ -137,7 +127,7 @@ void AudioEffectTapInInstance::process_line_in(const AudioFrame *p_src_frames, A
 
 	total_time += p_frame_count * effect->get_simulator()->get_tick_rate();
 
-	mutex.unlock();
+	effect->ls_in.unlock();
 }
 
 bool AudioEffectTapInInstance::process_silence() const {

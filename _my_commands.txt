@@ -1,15 +1,23 @@
 debug (more compiler output, gdb-debuggable with msys):
   scons use_mingw=yes debug_symbols=yes dev_build=yes separate_debug_symbols=yes
 
-quick (faster compile):
-  mkdir ./cache/quick
-  scons dev_build=no compiledb=True cache_path=.cache/quick cache_limit=2
-
 debug editor with gdb:
   gdb --args .\bin\godot.windows.editor.dev.x86_64.exe ..\..\moon-science\project.godot
 
 debug scene with gdb:
-  gdb --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science mockup\mockup_grid.tscn
+  gdb --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science mockup\mockup.tscn
 
 debug run editor (good for breakpointing gdscript):
   .\bin\godot.windows.editor.dev.x86_64.exe ..\..\moon-science\project.godot
+
+debug basic circuit simulation
+  gdb -x modules\flex_logic_cpp_2\gdb_scripts\break_simulation.txt --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science flex_logic_test\audible_sim_construction_test\audible_sim_construction_test.tscn
+no breakpoints:
+  gdb --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science flex_logic_test\audible_sim_construction_test\audible_sim_construction_test.tscn
+
+quick (faster compile):
+  mkdir ./cache/quick
+  scons dev_build=no compiledb=True cache_path=.cache/quick cache_limit=2
+
+run quick compiled project:
+  .\bin\godot.windows.editor.x86_64.exe ..\..\moon-science\project.godot

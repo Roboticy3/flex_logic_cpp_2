@@ -1,4 +1,3 @@
-#include <mutex>
 
 #include "core/object/object.h"
 #include "core/variant/variant.h"
@@ -138,26 +137,8 @@ bool AudioEffectTapOutInstance::process_silence() const {
 
 void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 	
-	//get mutex permission from the simulator so it can keep some operations exclusive
-	std::mutex &mutex = effect->get_simulator()->get_mutex();
-	
-	if (!mutex.try_lock()) {
-		WARN_PRINT("Failed to lock simulator mutex, skipping processing");
-
-		//Zero out the audio in this case
-		for (int i = 0; i < p_frame_count; i++) {
-			p_dst_frames[i] = AudioFrame(0.0, 0.0);
-		}
-
-		return;
-	}
-	
 	tap_time_t target_time = total_time + p_frame_count * effect->get_simulator()->get_tick_rate();
-
-	if (effect->get_simulator()->get_latest_event_time() <= target_time) {
-		WARN_PRINT("Not enough events in simulator, skipping processing");
-
-		mutex.unlock();
+	if (!effect->ls_out.try_lock(target_time, p_dst_frames, p_frame_count)) {
 		return;
 	}
 
@@ -200,5 +181,5 @@ void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, Aud
 
 	total_time = target_time;
 	
-	mutex.unlock();
+	effect->ls_out.unlock();
 }

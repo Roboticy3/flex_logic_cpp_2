@@ -23,22 +23,24 @@ void AudioStreamTapProbePlayback::_bind_methods() {
 
 int AudioStreamTapProbePlayback::mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
 
-  if (!active) {
+  if (!stream->ls_out.try_lock(0, p_buffer, p_frames)) {
     return 0;
   }
-
-	std::cout << "mixing buffer with playback " << p_frames << " frames" << std::endl;
 
   //generate a sine wave using the frame count and the mix rate combined with
   //the frequency
 
+  double factor = (double)p_rate_scale * (double)frequency * 2 * Math::PI;
+
   for (int i = 0; i < p_frames; i++) {
-    double value = Math::sin(phase + (double)i / (double)mix_rate * (double)p_rate_scale * (double)frequency);
+    double value = Math::sin(phase + (double)i / (double)mix_rate * factor);
     p_buffer[i] = AudioFrame(value, value);
   }
 
-  double time_elapsed = (double)p_frames / (double)mix_rate * (double)p_rate_scale * (double)frequency;
+  double time_elapsed = (double)p_frames / (double)mix_rate * factor;
   phase += time_elapsed;
+
+  stream->ls_out.unlock();
 
   return p_frames;
 }
@@ -53,16 +55,16 @@ double AudioStreamTapProbePlayback::get_playback_position() const {
 
 void AudioStreamTapProbePlayback::start(double start_time) {
   phase = start_time;
-  active = true;
+  stream->ls_out.set_live(true);
 }
 
 void AudioStreamTapProbePlayback::stop() {
-  active = false;
+  stream->ls_out.set_live(false);
   phase = 0.0;
 }
 
 bool AudioStreamTapProbePlayback::is_playing() const {
-	return active;
+	return stream->ls_out.get_live();
 }
 
 int AudioStreamTapProbePlayback::get_loop_count() const {
