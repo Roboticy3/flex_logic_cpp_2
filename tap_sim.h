@@ -24,6 +24,10 @@ class TapSim : public Resource {
 
 	int tick_rate = 1024;
 	tap_time_t latest_event_time = 0;
+	
+	//should be good enough to check this instead of the values of patch_bay and
+	//network
+	bool is_instantiated = false;
 
 protected:
 	static void _bind_methods();
@@ -95,5 +99,7 @@ public:
 	 *  - Populated network and patch bay
 	 *  - Wire type for added components to default to
 	 */
+	void instantiate();
+
 	TapSim();
 };

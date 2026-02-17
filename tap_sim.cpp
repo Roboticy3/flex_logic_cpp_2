@@ -28,6 +28,7 @@ void TapSim::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("process_once"), &TapSim::process_once);
 	ClassDB::bind_method(D_METHOD("process_to"), &TapSim::process_to);
 	ClassDB::bind_method(D_METHOD("clear"), &TapSim::clear);
+	ClassDB::bind_method(D_METHOD("instantiate"), &TapSim::instantiate);
 }
 
 Ref<TapNetwork> TapSim::get_network() const {
@@ -152,7 +153,7 @@ std::recursive_mutex &TapSim::get_mutex() const {
 	return mutex;
 }
 
-TapSim::TapSim() {
+void TapSim::instantiate() {
 	network.instantiate();
 	patch_bay.instantiate();
 
@@ -161,4 +162,9 @@ TapSim::TapSim() {
 	Ref<TapComponentType> wire;
 	wire.instantiate();
 	network->set_wire_type(wire);
+
+	is_instantiated = true;
+}
+
+TapSim::TapSim() {
 }
