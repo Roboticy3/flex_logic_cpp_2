@@ -40,7 +40,14 @@ class AudioEffectTapOutInstance : public AudioEffectInstance {
 	LocalVector<AudioFrame> outputs;
 	int mix_rate;
 
+	size_t event_count = 0;
+
+protected:
+	static void _bind_methods();
+
 public:
+	size_t get_event_count() const { return event_count; }
+
 	virtual void process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) override;
 	virtual bool process_silence() const override;
 

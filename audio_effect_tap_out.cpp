@@ -109,6 +109,12 @@ Ref<AudioEffectInstance> AudioEffectTapOut::instantiate() {
 	return instance;
 }
 
+void AudioEffectTapOutInstance::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_event_count"), &AudioEffectTapOutInstance::get_event_count);
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "event_count"), "", "get_event_count");
+}
+
 void AudioEffectTapOutInstance::process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 	if (effect->get_live()) {
 		process_live(p_src_frames, p_dst_frames, p_frame_count);
@@ -156,7 +162,7 @@ void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, Aud
 			inputs[i] = patch_bay->get_pin_state_internal(input_pids[i]);
 		}
 
-		effect->get_simulator()->process_to(time);
+		event_count += effect->get_simulator()->process_to(time);
 
 		const PackedInt64Array &output_pids = effect->get_output_pids();
 		for (int i = 0; i < output_pids.size(); i++) {

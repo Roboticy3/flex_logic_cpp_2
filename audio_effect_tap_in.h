@@ -30,8 +30,14 @@ class AudioEffectTapInInstance : public AudioEffectInstance {
 	//instance specific state
 	AudioFrame last_activation;
 	tap_time_t total_time = 0;
+	size_t event_count = 0;
+
+protected:
+	static void _bind_methods();
 
 public:
+	size_t get_event_count() const { return event_count; }
+
 	virtual void process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) override;
 	virtual bool process_silence() const override;
 

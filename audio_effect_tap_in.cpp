@@ -3,6 +3,7 @@
 #include "core/object/class_db.h"
 
 #include "audio_effect_tap_in.h"
+#include "core/object/object.h"
 #include "tap_circuit_types.h"
 #include "tap_sim.h"
 
@@ -94,6 +95,12 @@ void AudioEffectTapIn::set_sample_skip(int new_sample_skip) {
 	sample_skip = new_sample_skip;
 }
 
+void AudioEffectTapInInstance::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_event_count"), &AudioEffectTapInInstance::get_event_count);
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "event_count"), "", "get_event_count");
+}
+
 void AudioEffectTapInInstance::process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 	if (effect->get_line_in()) {
 		process_line_in(p_src_frames, p_dst_frames, p_frame_count);
@@ -122,6 +129,7 @@ void AudioEffectTapInInstance::process_line_in(const AudioFrame *p_src_frames, A
 			tap_time_t time = total_time + i * effect->get_simulator()->get_tick_rate();
 			effect->get_simulator()->push_event(time, src_frame, effect->get_pid());
 			last_activation = src_frame;
+			event_count++;
 		}
 	}
 
