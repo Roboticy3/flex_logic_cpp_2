@@ -1,3 +1,4 @@
+#pragma once
 
 #include "core/object/object.h"
 #include "core/variant/variant.h"
@@ -11,17 +12,19 @@ class AudioStreamTapProbe : public AudioStream {
   GDCLASS(AudioStreamTapProbe, AudioStream)
 	friend class AudioStreamTapProbePlayback;
 
-	TapSimLiveSwitch ls_out;
+	TapSimLiveSwitch ls_in;
 
   protected:
     static void _bind_methods();
 
   public:
-		Ref<TapSim> get_simulator();
-		void set_simulator(Ref<TapSim> new_sim);
+		Ref<TapSim> get_simulator() {return ls_in.get_simulator();}
+		void set_simulator(Ref<TapSim> new_sim) {ls_in.set_simulator(new_sim);}
 
-		PackedInt64Array get_output_pids();
-		void set_output_pids(PackedInt64Array pids);
+		PackedInt64Array get_input_pids() {return ls_in.get_live_pids();}
+		void set_input_pids(PackedInt64Array pids) {ls_in.set_live_pids(pids);}
+
+		bool get_live() {return ls_in.get_live();}
 
     virtual Ref<AudioStreamPlayback> instantiate_playback() override;
     

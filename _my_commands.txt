@@ -12,6 +12,7 @@ debug run editor (good for breakpointing gdscript):
 
 debug basic circuit simulation
   gdb -x modules\flex_logic_cpp_2\gdb_scripts\break_simulation.txt --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science flex_logic_test\audible_sim_construction_test\audible_sim_construction_test.tscn
+  gdb -x modules\flex_logic_cpp_2\gdb_scripts\break_simulation.txt --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science flex_logic_test\audible_sim_test\audible_sim_test.tscn
 no breakpoints:
   gdb --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science flex_logic_test\audible_sim_construction_test\audible_sim_construction_test.tscn
 

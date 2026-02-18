@@ -12,6 +12,7 @@
 class AudioEffectTapDebugger;
 
 /**
+ * @deprecated This class is deprecated and will be removed in a future version.
  * @brief A statistical snapshot of some amount of simulation time in an
  * AudioEffectTapDebuggerInstance, recovered from AudioEffectTapDebugger using
  * `AudioEffectTapDebugger:get_stats`.

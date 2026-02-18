@@ -1,10 +1,19 @@
-#include <iostream>
 
 #include "core/math/audio_frame.h"
 #include "core/math/math_funcs.h"
 #include "audio_stream_tap_probe.h"
 
 void AudioStreamTapProbe::_bind_methods() {
+  ClassDB::bind_method(D_METHOD("get_simulator"), &AudioStreamTapProbe::get_simulator);
+  ClassDB::bind_method(D_METHOD("set_simulator", "sim"), &AudioStreamTapProbe::set_simulator);
+  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
+
+  ClassDB::bind_method(D_METHOD("get_input_pids"), &AudioStreamTapProbe::get_input_pids);
+  ClassDB::bind_method(D_METHOD("set_input_pids", "pids"), &AudioStreamTapProbe::set_input_pids);
+  ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "input_pids"), "set_input_pids", "get_input_pids");
+
+  ClassDB::bind_method(D_METHOD("get_live"), &AudioStreamTapProbe::get_live);
+  ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "", "get_live");
 }
 
 Ref<AudioStreamPlayback> AudioStreamTapProbe::instantiate_playback() {
@@ -23,7 +32,7 @@ void AudioStreamTapProbePlayback::_bind_methods() {
 
 int AudioStreamTapProbePlayback::mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
 
-  if (!stream->ls_out.try_lock(0, p_buffer, p_frames)) {
+  if (!stream->ls_in.try_lock(0, p_buffer, p_frames)) {
     return 0;
   }
 
@@ -40,7 +49,7 @@ int AudioStreamTapProbePlayback::mix(AudioFrame *p_buffer, float p_rate_scale, i
   double time_elapsed = (double)p_frames / (double)mix_rate * factor;
   phase += time_elapsed;
 
-  stream->ls_out.unlock();
+  stream->ls_in.unlock();
 
   return p_frames;
 }
@@ -55,16 +64,16 @@ double AudioStreamTapProbePlayback::get_playback_position() const {
 
 void AudioStreamTapProbePlayback::start(double start_time) {
   phase = start_time;
-  stream->ls_out.set_live(true);
+  stream->ls_in.set_live(true);
 }
 
 void AudioStreamTapProbePlayback::stop() {
-  stream->ls_out.set_live(false);
+  stream->ls_in.set_live(false);
   phase = 0.0;
 }
 
 bool AudioStreamTapProbePlayback::is_playing() const {
-	return stream->ls_out.get_live();
+	return stream->ls_in.get_live();
 }
 
 int AudioStreamTapProbePlayback::get_loop_count() const {

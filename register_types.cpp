@@ -2,6 +2,7 @@
 
 #include "audio_effect_tap_debugger.h"
 #include "audio_effect_tap_in.h"
+#include "audio_stream_tap_in.h"
 #include "audio_effect_tap_out.h"
 #include "register_types.h"
 #include "tap_component_type.h"
@@ -40,6 +41,8 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	
 	ClassDB::register_class<AudioStreamTapProbe>();
 	ClassDB::register_class<AudioStreamTapProbePlayback>();
+	ClassDB::register_class<AudioStreamTapIn>();
+	ClassDB::register_class<AudioStreamTapInPlayback>();
 }
 
 void uninitialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {

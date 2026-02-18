@@ -3,6 +3,8 @@
 #include "core/variant/variant.h"
 #include "servers/audio/audio_server.h"
 
+#include <iostream>
+
 #include "audio_effect_tap_out.h"
 
 void AudioEffectTapOut::_bind_methods() {
@@ -175,17 +177,14 @@ void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, Aud
 		}
 
 		AudioFrame total;
-		for (tap_label_t pid : effect->get_output_pids()) {
-			AudioFrame frame = patch_bay->get_pin_state_internal(pid);
-			if (Vector2i(frame.l, frame.r) == patch_bay->get_state_missing()) {
-				continue;
-			}
-			total += frame;
+		for (const AudioFrame &state : outputs) {
+			total += state;
 		}
 		p_dst_frames[i] = total;
 	}
 
 	total_time = target_time;
+	//std::cout << "frame sample: " << p_dst_frames[0].left << std::endl;
 	
 	effect->ls_out.unlock();
 }
