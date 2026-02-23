@@ -11,6 +11,7 @@
 #include "tap_circuit.h"
 #include "reference_sim.h"
 #include "audio_stream_tap_probe.h"
+#include "audio_stream_primitive.h"
 
 void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
@@ -43,6 +44,7 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<AudioStreamTapProbePlayback>();
 	ClassDB::register_class<AudioStreamTapIn>();
 	ClassDB::register_class<AudioStreamTapInPlayback>();
+	ClassDB::register_class<AudioStreamPrimitive>();
 }
 
 void uninitialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {

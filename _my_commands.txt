@@ -2,10 +2,10 @@ debug (more compiler output, gdb-debuggable with msys):
   scons use_mingw=yes debug_symbols=yes dev_build=yes separate_debug_symbols=yes
 
 debug editor with gdb:
-  gdb --args .\bin\godot.windows.editor.dev.x86_64.exe ..\..\moon-science\project.godot
+  gdb -x modules\flex_logic_cpp_2\gdb_scripts\just_go.txt --args .\bin\godot.windows.editor.dev.x86_64.exe ..\..\moon-science\project.godot
 
 debug scene with gdb:
-  gdb --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science mockup\mockup.tscn
+  gdb -x modules\flex_logic_cpp_2\gdb_scripts\just_go.txt --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science mockup\mockup.tscn
 
 debug run editor (good for breakpointing gdscript):
   .\bin\godot.windows.editor.dev.x86_64.exe ..\..\moon-science\project.godot

@@ -10,6 +10,8 @@ void none_solver(const Vector<const tap_event_t *> &state, tap_queue_t &queue, t
 
 void mixer_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
 
+void gate_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
+
 /*
 Define a resource wrapper for tap_component_type_t, allowing the user to
 dynamically specify type names, sensitive pin indices, and solver functions via
