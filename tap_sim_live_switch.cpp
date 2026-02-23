@@ -93,6 +93,26 @@ bool TapSimLiveSwitch::try_lock(tap_time_t end_time, AudioFrame *p_dst_frames, i
 	return true;
 }
 
+bool TapSimLiveSwitch::lock() const {
+	if (simulator.is_null()) {
+		return false;
+	}
+	simulator->get_mutex().lock();
+	return true;
+}
+
+bool TapSimLiveSwitch::unlock() const {
+	if (simulator.is_null()) {
+		return false;
+	}
+	
+	std::recursive_mutex &mutex = simulator->get_mutex();
+
+	mutex.unlock();
+	
+	return true;
+}
+
 bool TapSimLiveSwitch::unlock() {
 	if (simulator.is_null()) {
 		return false;

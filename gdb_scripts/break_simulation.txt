@@ -1,6 +1,4 @@
 start
-b AudioEffectTapInInstance::process_line_in
-b AudioEffectTapOutInstance::process_live
-b TapCircuit::process_to
-b TapCircuit::push_event
+b AudioStreamTapSimulatorPlayback::mix
+b AudioStreamTapSimulatorPlayback::mix_in
 c

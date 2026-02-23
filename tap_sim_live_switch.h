@@ -50,6 +50,9 @@ public:
 	 */
 	bool try_lock(tap_time_t end_time, AudioFrame *p_dst_frames, int p_frame_count);
 
+	bool lock() const;
+	bool unlock() const;
+
 	/**
 	 * @brief Unlock the simulator.
 	 *
