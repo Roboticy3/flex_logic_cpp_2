@@ -4,6 +4,7 @@
 #include "servers/audio/audio_stream.h"
 #include "tap_circuit_types.h"
 #include <iostream>
+#include <mutex>
 
 void AudioStreamTapSimulator::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_input_streams"), &AudioStreamTapSimulator::get_input_streams);
@@ -14,11 +15,19 @@ void AudioStreamTapSimulator::_bind_methods() {
   ClassDB::bind_method(D_METHOD("set_circuit", "circuit"), &AudioStreamTapSimulator::set_circuit);
   ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "circuit", PROPERTY_HINT_RESOURCE_TYPE, "TapCircuit"), "set_circuit", "get_circuit");
 
-  ClassDB::bind_method(D_METHOD("get_input_pids"), &AudioStreamTapSimulator::get_input_pids);
-  ClassDB::bind_method(D_METHOD("set_input_pids", "pids"), &AudioStreamTapSimulator::set_input_pids);
-  ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "input_pids"), "set_input_pids", "get_input_pids");
+  ClassDB::bind_method(D_METHOD("get_reference_sim"), &AudioStreamTapSimulator::get_reference_sim);
+  ClassDB::bind_method(D_METHOD("set_reference_sim", "reference_sim"), &AudioStreamTapSimulator::set_reference_sim);
+  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "reference_sim", PROPERTY_HINT_RESOURCE_TYPE, "ReferenceSim"), "set_reference_sim", "get_reference_sim");
 
-  ClassDB::bind_method(D_METHOD("get_live"), &AudioStreamTapSimulator::get_live);
+  ClassDB::bind_method(D_METHOD("get_sample_skip"), &AudioStreamTapSimulator::get_sample_skip);
+  ClassDB::bind_method(D_METHOD("set_sample_skip", "sample_skip"), &AudioStreamTapSimulator::set_sample_skip);
+  ADD_PROPERTY(PropertyInfo(Variant::INT, "sample_skip"), "set_sample_skip", "get_sample_skip");
+
+  ClassDB::bind_method(D_METHOD("get_tick_rate"), &AudioStreamTapSimulator::get_tick_rate);
+  ClassDB::bind_method(D_METHOD("set_tick_rate", "tick_rate"), &AudioStreamTapSimulator::set_tick_rate);
+  ADD_PROPERTY(PropertyInfo(Variant::INT, "tick_rate"), "set_tick_rate", "get_tick_rate");
+
+  ClassDB::bind_method(D_METHOD("get_live"), &AudioStreamTapSimulator::is_simulating);
   ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "", "get_live");
 
   ClassDB::bind_method(D_METHOD("get_event_counts"), &AudioStreamTapSimulator::get_event_counts);
@@ -40,24 +49,83 @@ void AudioStreamTapSimulator::set_input_streams(const TypedDictionary<tap_label_
   }
 }
 
+PackedInt64Array AudioStreamTapSimulator::get_output_pids() const {
+  return output_pids;
+}
+
+void AudioStreamTapSimulator::set_output_pids(const PackedInt64Array &new_output_pids) {
+  output_pids = new_output_pids;
+}
+
 Ref<TapCircuit> AudioStreamTapSimulator::get_circuit() const {
-  return ls_in.get_simulator();
+  return circuit;
 }
 
-void AudioStreamTapSimulator::set_circuit(Ref<TapCircuit> sim) {
-  ls_in.set_simulator(sim);
+void AudioStreamTapSimulator::set_circuit(Ref<TapCircuit> new_circuit) {
+  circuit = new_circuit;
 }
 
-PackedInt64Array AudioStreamTapSimulator::get_input_pids() const {
-  return ls_in.get_live_pids();
+Ref<ReferenceSim> AudioStreamTapSimulator::get_reference_sim() const {
+  return reference_sim;
 }
 
-void AudioStreamTapSimulator::set_input_pids(const PackedInt64Array &pids) {
-  ls_in.set_live_pids(pids);
+void AudioStreamTapSimulator::set_reference_sim(Ref<ReferenceSim> new_reference_sim) {
+  reference_sim = new_reference_sim;
 }
 
-bool AudioStreamTapSimulator::get_live() {
-  return ls_in.get_live();
+int AudioStreamTapSimulator::get_tick_rate() const {
+  return tick_rate;
+}
+
+void AudioStreamTapSimulator::set_tick_rate(int new_tick_rate) {
+  tick_rate = new_tick_rate;
+}
+
+int AudioStreamTapSimulator::get_sample_skip() const {
+  return sample_skip;
+}
+
+void AudioStreamTapSimulator::set_sample_skip(int new_sample_skip) {
+  sample_skip = new_sample_skip;
+}
+
+bool AudioStreamTapSimulator::is_simulating() const {
+  bool live = false;
+  for (auto kv : trackers) {
+    if (kv.value.playback->is_playing()) {
+      live = true;
+      break;
+    }
+  }
+  return live;
+}
+
+bool AudioStreamTapSimulator::can_simulate() const {
+  if (circuit.is_null()) {
+    return false;
+  }
+
+  if (!circuit->is_instantiated()) {
+    return false;
+  }
+
+  for (auto kv : input_streams) {
+    if (kv.value.is_null()) {
+      continue;
+    }
+
+    if (!circuit->get_patch_bay()->has_pin(kv.key)) {
+      return false;
+    }
+  }
+
+  for (int64_t pid : output_pids) {
+    if (!circuit->get_patch_bay()->has_pin(pid)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 Ref<AudioStreamPlayback> AudioStreamTapSimulator::instantiate_playback() {
@@ -85,27 +153,22 @@ Ref<AudioStreamPlayback> AudioStreamTapSimulator::instantiate_playback() {
 }
 
 PackedInt64Array AudioStreamTapSimulator::get_event_counts() const {
-  if (!ls_in.lock()) {
+  if (!circuit.is_valid()) {
     return PackedInt64Array();
   }
+
+  std::lock_guard<std::recursive_mutex> lock(circuit->get_mutex());
   
   PackedInt64Array arr;
   for (auto kv: trackers) {
     arr.push_back(kv.value.event_count);
   }
-  ls_in.unlock();
   return arr;
 }
 
 void AudioStreamTapSimulatorPlayback::_bind_methods() {};
 
 int AudioStreamTapSimulatorPlayback::mix_in(float p_rate_scale, int p_frames) {
-	if (!owner->get_live()) {
-		return 0;
-	}
-
-  Ref<TapCircuit> simulator = owner->ls_in.get_simulator();
-
 	int todo = p_frames;
 
 	bool any_active = false;
@@ -116,7 +179,7 @@ int AudioStreamTapSimulatorPlayback::mix_in(float p_rate_scale, int p_frames) {
 		for (auto &kv : owner->trackers) {
       tap_label_t label = kv.key;
 			auto &tracker = kv.value;
-			if (tracker.playback.is_valid() && tracker.playback->is_playing()) {
+			if (tracker.playback->is_playing()) {
 				
         //TODO: volume controls for input streams
 
@@ -125,59 +188,47 @@ int AudioStreamTapSimulatorPlayback::mix_in(float p_rate_scale, int p_frames) {
 				}
 
         tracker.playback->mix(mix_buffer, p_rate_scale, to_mix);
-        for (int j = 0; j < to_mix; j++) {  
+        for (int j = 0; j < to_mix; j += owner->sample_skip) {  
           //input circuit events here.
-          tap_time_t time = current_time + (j * p_rate_scale) * simulator->get_tick_rate();
-          simulator->push_event(time, mix_buffer[j], label);
+          tap_time_t time = current_time + (j * p_rate_scale) * owner->tick_rate;
+          owner->circuit->push_event(time, mix_buffer[j], label);
         }
 
         tracker.event_count += to_mix;
 
-        std::cout << "\tincrementing " << tracker.playback.ptr() << " to " << tracker.event_count << std::endl;
+        //std::cout << "\tincrementing " << tracker.playback.ptr() << " to " << tracker.event_count << std::endl;
 			}
 		}
 		todo -= to_mix;
 	}
 
 	if (!any_active) {
-		owner->ls_in.set_live(false);
+		stop();
+    ERR_PRINT("AudioStreamTapSimulatorPlayback::mix_in tried to push events with no active input streams.");
 	}
 	return p_frames;
 }
 
 int AudioStreamTapSimulatorPlayback::mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
-
-  Ref<TapCircuit> simulator = owner->ls_in.get_simulator();
-
-  if (!owner->ls_in.try_lock(0, p_buffer, p_frames)) {
+  if (!owner->circuit->get_mutex().try_lock()) {
     return p_frames;
   }
 
-  std::cout << "mixing input" << std::endl;
+  //std::cout << "mixing input" << std::endl;
 
   //pass input to the circuit
   mix_in(p_rate_scale, p_frames);
 
-  PackedInt64Array input_pids = owner->get_input_pids();
+  current_time += (p_frames * p_rate_scale) * owner->tick_rate;
 
-  for (int i = 0; i < p_frames; i++) {
-    tap_time_t frame_time = current_time + (i * p_rate_scale) * simulator->get_tick_rate();
-    for (tap_label_t pid : input_pids) {
-      simulator->push_event(frame_time, p_buffer[i], pid);
-    }
-  }
-
-  current_time += (p_frames * p_rate_scale) * simulator->get_tick_rate();
-
-  owner->ls_in.unlock();
+  owner->circuit->get_mutex().unlock();
   
   return p_frames;
 }
 
 void AudioStreamTapSimulatorPlayback::start(double p_from_pos) {
-  owner->ls_in.set_live(true);
-  if (owner->ls_in.get_live()) {
-    current_time = owner->ls_in.get_simulator()->get_latest_event_time();
+  if (owner->can_simulate()) {
+    current_time = 0.0;
 
     for (auto kv : owner->trackers) {
       kv.value.event_count = 0;
@@ -187,9 +238,7 @@ void AudioStreamTapSimulatorPlayback::start(double p_from_pos) {
 }
 
 void AudioStreamTapSimulatorPlayback::stop() {
-  owner->ls_in.set_live(false);
-
-  if (owner->ls_in.get_live()) {
+  if (owner->is_simulating()) {
     for (auto kv : owner->trackers) {
       kv.value.playback->stop();
     }
@@ -197,6 +246,6 @@ void AudioStreamTapSimulatorPlayback::stop() {
 }
 
 bool AudioStreamTapSimulatorPlayback::is_playing() const {
-  return owner->get_live();
+  return owner->is_simulating();
 }
 

@@ -27,7 +27,7 @@ class TapCircuit : public Resource {
 	
 	//should be good enough to check this instead of the values of patch_bay and
 	//network
-	bool is_instantiated = false;
+	bool instantiated = false;
 
 protected:
 	static void _bind_methods();
@@ -100,6 +100,8 @@ public:
 	 *  - Wire type for added components to default to
 	 */
 	void instantiate();
+
+	bool is_instantiated() const;
 
 	TapCircuit();
 };

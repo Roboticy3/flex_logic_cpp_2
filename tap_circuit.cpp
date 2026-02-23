@@ -163,7 +163,11 @@ void TapCircuit::instantiate() {
 	wire.instantiate();
 	network->set_wire_type(wire);
 
-	is_instantiated = true;
+	instantiated = true;
+}
+
+bool TapCircuit::is_instantiated() const {
+	return instantiated;
 }
 
 TapCircuit::TapCircuit() {
