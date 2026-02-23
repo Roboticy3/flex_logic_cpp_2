@@ -20,8 +20,8 @@ public:
   Ref<AudioStream> get_base() { return base; }
   void set_base(Ref<AudioStream> stream) { base = stream; }
 
-  Ref<TapSim> get_simulator() { return ls_in.get_simulator(); }
-  void set_simulator(Ref<TapSim> sim) { ls_in.set_simulator(sim); }
+  Ref<TapCircuit> get_simulator() { return ls_in.get_simulator(); }
+  void set_simulator(Ref<TapCircuit> sim) { ls_in.set_simulator(sim); }
 
   PackedInt64Array get_input_pids() { return ls_in.get_live_pids(); }
   void set_input_pids(const PackedInt64Array &pids) { ls_in.set_live_pids(pids); }

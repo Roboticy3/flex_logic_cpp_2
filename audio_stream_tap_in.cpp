@@ -7,7 +7,7 @@
 void AudioStreamTapIn::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_simulator"), &AudioStreamTapIn::get_simulator);
   ClassDB::bind_method(D_METHOD("set_simulator", "sim"), &AudioStreamTapIn::set_simulator);
-  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
+  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapCircuit"), "set_simulator", "get_simulator");
 
   ClassDB::bind_method(D_METHOD("get_input_pids"), &AudioStreamTapIn::get_input_pids);
   ClassDB::bind_method(D_METHOD("set_input_pids", "pids"), &AudioStreamTapIn::set_input_pids);
@@ -42,7 +42,7 @@ void AudioStreamTapInPlayback::_bind_methods() {
 int AudioStreamTapInPlayback::mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
   p_frames = composition_over_inheritance->mix(p_buffer, p_rate_scale, p_frames);
 
-  Ref<TapSim> simulator = owner->ls_in.get_simulator();
+  Ref<TapCircuit> simulator = owner->ls_in.get_simulator();
   tap_time_t target_time = current_time + (p_frames * p_rate_scale) * simulator->get_tick_rate();
   if (!owner->ls_in.try_lock(target_time, p_buffer, p_frames)) {
     return p_frames;

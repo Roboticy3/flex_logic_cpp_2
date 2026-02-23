@@ -4,7 +4,7 @@
 #include "servers/audio/audio_effect.h"
 
 #include "tap_circuit_types.h"
-#include "tap_sim.h"
+#include "tap_circuit.h"
 #include "tap_sim_live_switch.h"
 
 class AudioEffectTapIn;
@@ -49,11 +49,11 @@ public:
 };
 
 /**
- * @brief Referencing a TapSim and a single pin id for input, create an
+ * @brief Referencing a TapCircuit and a single pin id for input, create an
  * AudioEffectInstance to convert audio samples into events and push them into
  * `simulator` with simulation time sample# * `simulator->tick_rate`.
  *
- * @param simulator The target TapSim events are fed into
+ * @param simulator The target TapCircuit events are fed into
  * @param pid The target pin in `simulator` events are fed into
  * @param activation_delta The difference between samples in amplitude
  *  constituting an "event". When set to 1 or lower, any change in audio level
@@ -83,8 +83,8 @@ protected:
 public:
 	virtual Ref<AudioEffectInstance> instantiate() override;
 
-	Ref<TapSim> get_simulator() const;
-	void set_simulator(Ref<TapSim> new_simulator);
+	Ref<TapCircuit> get_simulator() const;
+	void set_simulator(Ref<TapCircuit> new_simulator);
 
 	tap_sample_t get_activation_delta() const;
 	void set_activation_delta(tap_sample_t new_activation_delta);

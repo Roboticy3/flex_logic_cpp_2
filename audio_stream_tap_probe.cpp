@@ -6,7 +6,7 @@
 void AudioStreamTapProbe::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_simulator"), &AudioStreamTapProbe::get_simulator);
   ClassDB::bind_method(D_METHOD("set_simulator", "sim"), &AudioStreamTapProbe::set_simulator);
-  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
+  ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapCircuit"), "set_simulator", "get_simulator");
 
   ClassDB::bind_method(D_METHOD("get_input_pids"), &AudioStreamTapProbe::get_input_pids);
   ClassDB::bind_method(D_METHOD("set_input_pids", "pids"), &AudioStreamTapProbe::set_input_pids);

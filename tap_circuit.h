@@ -12,8 +12,8 @@
  *
  * Resolve state manually or by giving to a TapSimAudioStreamGenerator
  */
-class TapSim : public Resource {
-	GDCLASS(TapSim, Resource);
+class TapCircuit : public Resource {
+	GDCLASS(TapCircuit, Resource);
 
 	Ref<TapNetwork> network;
 	/// @brief Currently, network composes patch bay, but don't want to rely on that
@@ -61,7 +61,7 @@ public:
 	void process_once_internal(tap_queue_t &queue);
 
 	/**
-	 * @brief Process an event with the TapSim's configured patch bay as the source.
+	 * @brief Process an event with the TapCircuit's configured patch bay as the source.
 	 *
 	 * Uses the patch bay as the source for a queue, and thus the next event.
 	 * Since this does not take any internal types as an argument, it can be exposed to the editor.
@@ -101,5 +101,5 @@ public:
 	 */
 	void instantiate();
 
-	TapSim();
+	TapCircuit();
 };

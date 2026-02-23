@@ -1,9 +1,5 @@
 #pragma once
 
-#include <cfloat>
-#include <cmath>
-#include <optional>
-
 #include "core/object/object.h"
 #include "core/object/ref_counted.h"
 

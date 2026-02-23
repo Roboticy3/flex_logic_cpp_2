@@ -5,7 +5,7 @@
 #include "servers/audio/audio_effect.h"
 
 #include "tap_circuit_types.h"
-#include "tap_sim.h"
+#include "tap_circuit.h"
 #include "tap_sim_live_switch.h"
 #include "reference_sim.h"
 
@@ -87,8 +87,8 @@ public:
 	 */
 	bool any_input_connected();
 
-	Ref<TapSim> get_simulator() const;
-	void set_simulator(Ref<TapSim> new_simulator);
+	Ref<TapCircuit> get_simulator() const;
+	void set_simulator(Ref<TapCircuit> new_simulator);
 
 	PackedInt64Array get_output_pids() const;
 	void set_output_pids(PackedInt64Array new_output_pids);

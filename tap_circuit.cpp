@@ -6,60 +6,60 @@
 #include "core/object/object.h"
 #include "tap_circuit_types.h"
 #include "tap_component_type.h"
-#include "tap_sim.h"
+#include "tap_circuit.h"
 
-void TapSim::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_network"), &TapSim::get_network);
-	ClassDB::bind_method(D_METHOD("set_network", "new_network"), &TapSim::set_network);
+void TapCircuit::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_network"), &TapCircuit::get_network);
+	ClassDB::bind_method(D_METHOD("set_network", "new_network"), &TapCircuit::set_network);
 
-	ClassDB::bind_method(D_METHOD("get_patch_bay"), &TapSim::get_patch_bay);
-	ClassDB::bind_method(D_METHOD("set_patch_bay", "new_patch_bay"), &TapSim::set_patch_bay);
+	ClassDB::bind_method(D_METHOD("get_patch_bay"), &TapCircuit::get_patch_bay);
+	ClassDB::bind_method(D_METHOD("set_patch_bay", "new_patch_bay"), &TapCircuit::set_patch_bay);
 
-	ClassDB::bind_method(D_METHOD("get_tick_rate"), &TapSim::get_tick_rate);
-	ClassDB::bind_method(D_METHOD("set_tick_rate", "new_tick_rate"), &TapSim::set_tick_rate);
+	ClassDB::bind_method(D_METHOD("get_tick_rate"), &TapCircuit::get_tick_rate);
+	ClassDB::bind_method(D_METHOD("set_tick_rate", "new_tick_rate"), &TapCircuit::set_tick_rate);
 
-	ClassDB::bind_method(D_METHOD("get_latest_event_time"), &TapSim::get_latest_event_time);
+	ClassDB::bind_method(D_METHOD("get_latest_event_time"), &TapCircuit::get_latest_event_time);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "network", PROPERTY_HINT_RESOURCE_TYPE, "TapNetwork"), "set_network", "get_network");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "patch_bay", PROPERTY_HINT_RESOURCE_TYPE, "TapPatchBay"), "set_patch_bay", "get_patch_bay");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "tick_rate", PROPERTY_HINT_RANGE, "0,1024"), "set_tick_rate", "get_tick_rate");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "latest_event_time"), "", "get_latest_event_time");
 
-	ClassDB::bind_method(D_METHOD("process_once"), &TapSim::process_once);
-	ClassDB::bind_method(D_METHOD("process_to"), &TapSim::process_to);
-	ClassDB::bind_method(D_METHOD("clear"), &TapSim::clear);
-	ClassDB::bind_method(D_METHOD("instantiate"), &TapSim::instantiate);
+	ClassDB::bind_method(D_METHOD("process_once"), &TapCircuit::process_once);
+	ClassDB::bind_method(D_METHOD("process_to"), &TapCircuit::process_to);
+	ClassDB::bind_method(D_METHOD("clear"), &TapCircuit::clear);
+	ClassDB::bind_method(D_METHOD("instantiate"), &TapCircuit::instantiate);
 }
 
-Ref<TapNetwork> TapSim::get_network() const {
+Ref<TapNetwork> TapCircuit::get_network() const {
 	return network;
 }
 
-void TapSim::set_network(Ref<TapNetwork> new_network) {
+void TapCircuit::set_network(Ref<TapNetwork> new_network) {
 	network = new_network;
 }
 
-Ref<TapPatchBay> TapSim::get_patch_bay() const {
+Ref<TapPatchBay> TapCircuit::get_patch_bay() const {
 	return patch_bay;
 }
 
-void TapSim::set_patch_bay(Ref<TapPatchBay> new_patch_bay) {
+void TapCircuit::set_patch_bay(Ref<TapPatchBay> new_patch_bay) {
 	patch_bay = new_patch_bay;
 }
 
-int TapSim::get_tick_rate() const {
+int TapCircuit::get_tick_rate() const {
 	return tick_rate;
 }
 
-void TapSim::set_tick_rate(int new_tick_rate) {
+void TapCircuit::set_tick_rate(int new_tick_rate) {
 	tick_rate = new_tick_rate;
 }
 
-tap_time_t TapSim::get_latest_event_time() const {
+tap_time_t TapCircuit::get_latest_event_time() const {
 	return latest_event_time;
 }
 
-void TapSim::process_once_internal(tap_queue_t &queue) {
+void TapCircuit::process_once_internal(tap_queue_t &queue) {
 	if (queue.is_empty()) {
 		ERR_PRINT(String("Tried to process empty queue"));
 		return;
@@ -117,9 +117,9 @@ void TapSim::process_once_internal(tap_queue_t &queue) {
 	}
 }
 
-void TapSim::process_once() {
+void TapCircuit::process_once() {
 	if (patch_bay.is_null()) {
-		ERR_PRINT("TapSim::process_once: patch bay is not set. Cannot process events.");
+		ERR_PRINT("TapCircuit::process_once: patch bay is not set. Cannot process events.");
 		return;
 	}
 
@@ -127,7 +127,7 @@ void TapSim::process_once() {
 	process_once_internal(queue);
 }
 
-int TapSim::process_to(tap_time_t end_time) {
+int TapCircuit::process_to(tap_time_t end_time) {
 	tap_queue_t &queue = patch_bay->get_queue_internal();
 	int count = 0;
 	while (!queue.is_empty() && queue.minimum().first.time <= end_time) {
@@ -138,22 +138,22 @@ int TapSim::process_to(tap_time_t end_time) {
 	return count;
 }
 
-void TapSim::push_event(tap_time_t time, AudioFrame state, tap_label_t pid) {
+void TapCircuit::push_event(tap_time_t time, AudioFrame state, tap_label_t pid) {
 	patch_bay->get_queue_internal().insert(tap_event_t{ time, state, pid, patch_bay->COMPONENT_MISSING }, time);
 	latest_event_time = time > latest_event_time ? time : latest_event_time;
 }
 
-void TapSim::clear() {
+void TapCircuit::clear() {
 	std::lock_guard<std::recursive_mutex> lock(mutex);
 	patch_bay->clear_pins();
 	network->clear_components();
 }
 
-std::recursive_mutex &TapSim::get_mutex() const {
+std::recursive_mutex &TapCircuit::get_mutex() const {
 	return mutex;
 }
 
-void TapSim::instantiate() {
+void TapCircuit::instantiate() {
 	network.instantiate();
 	patch_bay.instantiate();
 
@@ -166,5 +166,5 @@ void TapSim::instantiate() {
 	is_instantiated = true;
 }
 
-TapSim::TapSim() {
+TapCircuit::TapCircuit() {
 }

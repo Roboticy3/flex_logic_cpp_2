@@ -6,7 +6,7 @@
 #include "servers/audio/audio_effect.h"
 
 #include "tap_circuit_types.h"
-#include "tap_sim.h"
+#include "tap_circuit.h"
 #include "tap_sim_live_switch.h"
 
 class AudioEffectTapDebugger;
@@ -57,7 +57,7 @@ public:
 };
 
 /**
- * @brief Spawn an AudioEffectInstance that analyzes a TapSim on the audio
+ * @brief Spawn an AudioEffectInstance that analyzes a TapCircuit on the audio
  * process schedule. This is a base class that only runs basic statistics on pin
  * states, but the class can be extended to measure performance and accuracy.
  *
@@ -83,8 +83,8 @@ protected:
 	static void _bind_methods();
 
 public:
-	Ref<TapSim> get_simulator() const;
-	void set_simulator(Ref<TapSim> new_simulator);
+	Ref<TapCircuit> get_simulator() const;
+	void set_simulator(Ref<TapCircuit> new_simulator);
 
 	PackedInt64Array get_monitor_pids() const;
 	void set_monitor_pids(PackedInt64Array new_monitor_pids);
