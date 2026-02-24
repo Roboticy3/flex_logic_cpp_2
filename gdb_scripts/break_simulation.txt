@@ -1,4 +1,5 @@
 start
-b AudioStreamTapSimulatorPlayback::mix
 b AudioStreamTapSimulatorPlayback::mix_in
+b AudioStreamTapSimulatorPlayback::mix_out
+b AudioStreamTapSimulatorPlayback::mix_debug
 c

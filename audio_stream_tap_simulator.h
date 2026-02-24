@@ -13,6 +13,8 @@
  * and sums output from output pids.
  *
  * @param input_streams A dictionary mapping tap labels to AudioStreams.
+ * @param debug_input_override If a stream is mapped to this label, pipe
+ * directly to the output instead of through the circuit. Good for toggling.
  * @param output_pids Pids that should be summed for the output
  *
  * @param circuit The TapCircuit to simulate.
@@ -30,6 +32,7 @@ class AudioStreamTapSimulator : public AudioStream {
   friend class AudioStreamTapSimulatorPlayback;
 
   HashMap<tap_label_t,Ref<AudioStream>> input_streams;
+  tap_label_t debug_input_override = -1;
   
   PackedInt64Array output_pids;
 
@@ -52,6 +55,9 @@ protected:
 public:
   TypedDictionary<tap_label_t, Ref<AudioStream>> get_input_streams() const;
   void set_input_streams(const TypedDictionary<tap_label_t, Ref<AudioStream>> &streams);
+
+  tap_label_t get_debug_input_override() const;
+  void set_debug_input_override(tap_label_t label);
 
   PackedInt64Array get_output_pids() const;
   void set_output_pids(const PackedInt64Array &pids);
@@ -108,6 +114,10 @@ public:
   //copy AudioStreamSynchronized mix logic, replacing the summing mix with 
   //sending events to the simulator
   int mix_in(float p_rate_scale, int p_frames);
+
+  int mix_out(AudioFrame *p_buffer, float p_rate_scale, int p_frames);
+
+  int mix_debug(AudioFrame *p_buffer, float p_rate_scale, int p_frames);
 
 	//read out the simulator contents
 	virtual int mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) override;
