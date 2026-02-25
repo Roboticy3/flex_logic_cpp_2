@@ -131,7 +131,7 @@ void mixer_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, t
 	AudioFrame frame1 = pins[1]->state;
 
 	AudioFrame result = frame0 + frame1;
-	AudioFrame carry;
+	AudioFrame carry(0.0f, 0.0f);
 
 	if (result.left < -1.0f) {
 		carry.left = -1.0f;

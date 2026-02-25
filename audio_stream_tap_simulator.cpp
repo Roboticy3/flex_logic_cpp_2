@@ -308,6 +308,39 @@ PackedInt64Array AudioStreamTapSimulator::get_event_counts() const {
 
 void AudioStreamTapSimulatorPlayback::_bind_methods() {};
 
+int AudioStreamTapSimulatorPlayback::mix_debug(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
+  if (!owner->input_streams.has(owner->debug_input_override)) {
+    for (int i = 0; i < p_frames; i++) {
+      p_buffer[i] = AudioFrame(0, 0);
+    }
+    return p_frames;
+  }
+
+  Ref<AudioStreamPlayback> playback = owner->trackers[owner->debug_input_override].playback;
+
+  if (!playback.is_valid()) {
+    for (int i = 0; i < p_frames; i++) {
+      p_buffer[i] = AudioFrame(0, 0);
+    }
+    return p_frames;
+  }
+
+  //again, stealing this idea from how AudioStreamSynchronized is implemented
+  //It looks like the intent is to use the fixed-size buffer to manage the streams
+  //in a way that doesn't require dynamic memory.
+  int todo = p_frames;
+  AudioFrame *rolling_buffer = p_buffer;
+
+  while (todo) {
+    int to_mix = MIN(todo, MIX_BUFFER_SIZE);
+    playback->mix(rolling_buffer, p_rate_scale, to_mix);
+    todo -= to_mix;
+    rolling_buffer += to_mix;
+  }
+
+  return p_frames;
+}
+
 int AudioStreamTapSimulatorPlayback::mix_in(float p_rate_scale, int p_frames) {
 
   if (owner->input_streams.has(owner->debug_input_override)) {
@@ -372,6 +405,9 @@ int AudioStreamTapSimulatorPlayback::mix_out(AudioFrame *p_buffer, float p_rate_
       std::cout << "AudioStreamTapSimulatorPlayback::mix_out: last_process_to_events is 0" << std::endl;
     }
 
+    //zero out the buffer before summing to avoid noise from previous frames
+    p_buffer[i] = AudioFrame(0, 0);
+
     for (tap_label_t pid : owner->output_pids) {
       //this line is still kind of ugly. Make sure to undo the references inside tapsim before merging fix-#19
       p_buffer[i] += owner->circuit->get_patch_bay()->get_pin_state_internal(pid);
@@ -380,36 +416,18 @@ int AudioStreamTapSimulatorPlayback::mix_out(AudioFrame *p_buffer, float p_rate_
   return p_frames;
 }
 
-int AudioStreamTapSimulatorPlayback::mix_debug(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
-  if (!owner->input_streams.has(owner->debug_input_override)) {
-    for (int i = 0; i < p_frames; i++) {
-      p_buffer[i] = AudioFrame(0, 0);
-    }
-    return p_frames;
+int AudioStreamTapSimulatorPlayback::mix_stats(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
+  
+  AudioFrame avg;
+
+  for (int i = 0; i < p_frames; i++) {
+    avg += p_buffer[i];
   }
 
-  Ref<AudioStreamPlayback> playback = owner->trackers[owner->debug_input_override].playback;
+  avg /= (float)p_frames;
 
-  if (!playback.is_valid()) {
-    for (int i = 0; i < p_frames; i++) {
-      p_buffer[i] = AudioFrame(0, 0);
-    }
-    return p_frames;
-  }
-
-  //again, stealing this idea from how AudioStreamSynchronized is implemented
-  //It looks like the intent is to use the fixed-size buffer to manage the streams
-  //in a way that doesn't require dynamic memory.
-  int todo = p_frames;
-  AudioFrame *rolling_buffer = p_buffer;
-
-  while (todo) {
-    int to_mix = MIN(todo, MIX_BUFFER_SIZE);
-    playback->mix(rolling_buffer, p_rate_scale, to_mix);
-    todo -= to_mix;
-    rolling_buffer += to_mix;
-  }
-
+  std::cout << "AudioStreamTapSimulatorPlayback::mix_stats: " << avg.left << ", " << avg.right << std::endl;
+  
   return p_frames;
 }
 
@@ -418,15 +436,13 @@ int AudioStreamTapSimulatorPlayback::mix(AudioFrame *p_buffer, float p_rate_scal
     return p_frames;
   }
 
-  //std::cout << "mixing input" << std::endl;
-
-  //debug before input so phasing statefulness from mix_in doesn't affect it
   mix_debug(p_buffer, p_rate_scale, p_frames);
 
-  //pass input to the circuit
   mix_in(p_rate_scale, p_frames);
 
   mix_out(p_buffer, p_rate_scale, p_frames);
+
+  mix_stats(p_buffer, p_rate_scale, p_frames);
 
   current_time += (p_frames * p_rate_scale) * owner->tick_rate;
 

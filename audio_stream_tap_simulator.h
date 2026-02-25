@@ -49,6 +49,8 @@ class AudioStreamTapSimulator : public AudioStream {
 
   HashMap<tap_label_t,playback_tracker_t> trackers;
 
+  bool calculate_stats = true;
+
 protected:
   static void _bind_methods();
 
@@ -93,6 +95,15 @@ public:
   virtual Ref<AudioStreamPlayback> instantiate_playback() override;
 };
 
+/**
+ * @brief Drives a TapCircuit by pushing events from `owner->input_streams` to
+ * and reads state from `owner->output_pids` to generate audio.
+ *
+ * @param mix_buffer A temporary buffer for audio.
+ *
+ * @param owner The AudioStreamTapSimulator that owns this playback.
+ * @param current_time The current time in the circuit.
+ */
 class AudioStreamTapSimulatorPlayback : public AudioStreamPlaybackResampled {
   GDCLASS(AudioStreamTapSimulatorPlayback, AudioStreamPlaybackResampled);
   friend class AudioStreamTapSimulator;
@@ -111,26 +122,52 @@ protected:
 
 public:
 
-  //copy AudioStreamSynchronized mix logic, replacing the summing mix with 
-  //sending events to the simulator
-  int mix_in(float p_rate_scale, int p_frames);
-
-  int mix_out(AudioFrame *p_buffer, float p_rate_scale, int p_frames);
-
+  /**
+   * @brief Reads circuit state out from pid `owner->debug_input_override`. In
+   * normal function, this should sound exactly like the input mapped to that
+   * pid, or silence.
+   */
   int mix_debug(AudioFrame *p_buffer, float p_rate_scale, int p_frames);
 
-	//read out the simulator contents
+  /**
+   * @brief Mix `owner->input_streams` into the circuit at their target pids.
+   */
+  int mix_in(float p_rate_scale, int p_frames);
+
+  /**
+   * @brief Sum the states of `owner->output_pids` into `p_buffer` for each 
+   * audio frame.
+   */
+  int mix_out(AudioFrame *p_buffer, float p_rate_scale, int p_frames);
+
+  /**
+   * @brief Run statistics on mixed outputs if `owner->calculate_stats` is true.
+   *
+   * Prints the average level for each channel to std::cout.
+   */
+  int mix_stats(AudioFrame *p_buffer, float p_rate_scale, int p_frames);
+
+	/**
+   * @brief Schedule and call all the other mix methods.
+   */
 	virtual int mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) override;
 
-	//start adding events at the latest event position of the simulator and set
-  //the live switch on our AudioStreamTapSimulator owner to true.
-  //note that setting live can fail, in which case an error prints and nothing
-  //happens.
+	/**
+   * @brief Start adding events at the latest event position of the simulator
+   * and set the live switch on our AudioStreamTapSimulator owner to true.
+   * 
+   * Note that setting live can fail, in which case an error prints and nothing
+   * happens.
+   */
 	virtual void start(double p_from_pos = 0.0) override;
-  //set live to false
+  /**
+   * @brief Sets live to false.
+   */
 	virtual void stop() override;
 
-  //returns whether the stream is currently playing (live switch is on)
+  /**
+   * @brief Returns whether the stream is currently playing (live switch is on).
+   */
 	virtual bool is_playing() const override;
 
 	AudioStreamTapSimulatorPlayback() = default;

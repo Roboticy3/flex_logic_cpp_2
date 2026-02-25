@@ -32,31 +32,43 @@ void TapCircuit::_bind_methods() {
 }
 
 Ref<TapNetwork> TapCircuit::get_network() const {
+	std::lock_guard<std::recursive_mutex> lock(mutex);
 	return network;
 }
 
 void TapCircuit::set_network(Ref<TapNetwork> new_network) {
+	std::lock_guard<std::recursive_mutex> lock(mutex);
 	network = new_network;
 }
 
 Ref<TapPatchBay> TapCircuit::get_patch_bay() const {
+	std::lock_guard<std::recursive_mutex> lock(mutex);
 	return patch_bay;
 }
 
 void TapCircuit::set_patch_bay(Ref<TapPatchBay> new_patch_bay) {
+	std::lock_guard<std::recursive_mutex> lock(mutex);
 	patch_bay = new_patch_bay;
 }
 
 int TapCircuit::get_tick_rate() const {
+	std::lock_guard<std::recursive_mutex> lock(mutex);
 	return tick_rate;
 }
 
 void TapCircuit::set_tick_rate(int new_tick_rate) {
+	std::lock_guard<std::recursive_mutex> lock(mutex);
 	tick_rate = new_tick_rate;
 }
 
 tap_time_t TapCircuit::get_latest_event_time() const {
+	std::lock_guard<std::recursive_mutex> lock(mutex);
 	return latest_event_time;
+}
+
+size_t TapCircuit::get_event_count() const {
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+	return patch_bay->get_queue_internal().get_population();
 }
 
 void TapCircuit::process_once_internal(tap_queue_t &queue) {
