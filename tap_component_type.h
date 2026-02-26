@@ -1,16 +1,16 @@
 #pragma once
 
 #include "core/io/resource.h"
-#include "core/object/class_db.h"
 
 #include "tap_circuit_types.h"
-#include "tap_patch_bay.h"
 
 void wire_solver(const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
 
 void none_solver(const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
 
 void mixer_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
+
+void gate_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
 
 /*
 Define a resource wrapper for tap_component_type_t, allowing the user to

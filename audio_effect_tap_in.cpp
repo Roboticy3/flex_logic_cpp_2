@@ -5,7 +5,7 @@
 #include "audio_effect_tap_in.h"
 #include "core/object/object.h"
 #include "tap_circuit_types.h"
-#include "tap_sim.h"
+#include "tap_circuit.h"
 
 void AudioEffectTapIn::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_simulator"), &AudioEffectTapIn::get_simulator);
@@ -26,7 +26,7 @@ void AudioEffectTapIn::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_sample_skip"), &AudioEffectTapIn::get_sample_skip);
 	ClassDB::bind_method(D_METHOD("set_sample_skip", "new_sample_skip"), &AudioEffectTapIn::set_sample_skip);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapCircuit"), "set_simulator", "get_simulator");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "activation_delta", PROPERTY_HINT_RANGE, "0,1.0,0.001"), "set_activation_delta", "get_activation_delta");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "pid"), "set_pid", "get_pid");
 
@@ -51,11 +51,11 @@ void AudioEffectTapIn::set_activation_delta(tap_sample_t new_activation_delta) {
 	activation_delta = new_activation_delta;
 }
 
-Ref<TapSim> AudioEffectTapIn::get_simulator() const {
+Ref<TapCircuit> AudioEffectTapIn::get_simulator() const {
 	return ls_in.get_simulator();
 }
 
-void AudioEffectTapIn::set_simulator(Ref<TapSim> new_simulator) {
+void AudioEffectTapIn::set_simulator(Ref<TapCircuit> new_simulator) {
 	ls_in.set_simulator(new_simulator);
 }
 

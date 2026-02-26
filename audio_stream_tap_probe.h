@@ -18,8 +18,8 @@ class AudioStreamTapProbe : public AudioStream {
     static void _bind_methods();
 
   public:
-		Ref<TapSim> get_simulator() {return ls_in.get_simulator();}
-		void set_simulator(Ref<TapSim> new_sim) {ls_in.set_simulator(new_sim);}
+		Ref<TapCircuit> get_simulator() {return ls_in.get_simulator();}
+		void set_simulator(Ref<TapCircuit> new_sim) {ls_in.set_simulator(new_sim);}
 
 		PackedInt64Array get_input_pids() {return ls_in.get_live_pids();}
 		void set_input_pids(PackedInt64Array pids) {ls_in.set_live_pids(pids);}

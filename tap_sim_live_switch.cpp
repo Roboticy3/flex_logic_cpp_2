@@ -2,13 +2,13 @@
 
 #include "core/variant/variant.h"
 
-#include "tap_sim.h"
+#include "tap_circuit.h"
 #include "tap_sim_live_switch.h"
 
-Ref<TapSim> TapSimLiveSwitch::get_simulator() const {
+Ref<TapCircuit> TapSimLiveSwitch::get_simulator() const {
 	return simulator;
 }
-void TapSimLiveSwitch::set_simulator(Ref<TapSim> new_simulator) {
+void TapSimLiveSwitch::set_simulator(Ref<TapCircuit> new_simulator) {
 	simulator = new_simulator;
 
 	//re-validate the live state
@@ -90,6 +90,26 @@ bool TapSimLiveSwitch::try_lock(tap_time_t end_time, AudioFrame *p_dst_frames, i
 		return false;
 	}
 
+	return true;
+}
+
+bool TapSimLiveSwitch::lock() const {
+	if (simulator.is_null()) {
+		return false;
+	}
+	simulator->get_mutex().lock();
+	return true;
+}
+
+bool TapSimLiveSwitch::unlock() const {
+	if (simulator.is_null()) {
+		return false;
+	}
+	
+	std::recursive_mutex &mutex = simulator->get_mutex();
+
+	mutex.unlock();
+	
 	return true;
 }
 

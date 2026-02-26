@@ -131,7 +131,7 @@ void mixer_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, t
 	AudioFrame frame1 = pins[1]->state;
 
 	AudioFrame result = frame0 + frame1;
-	AudioFrame carry;
+	AudioFrame carry(0.0f, 0.0f);
 
 	if (result.left < -1.0f) {
 		carry.left = -1.0f;
@@ -158,11 +158,25 @@ void mixer_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, t
 	queue.insert({ new_time, carry, pins[3]->pid, cid }, new_time);
 }
 
+void gate_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
+	//multiply two inputs
+
+	AudioFrame frame0 = pins[0]->state;
+	AudioFrame frame1 = pins[1]->state;
+
+	AudioFrame result = frame0 * frame1;
+
+	tap_time_t new_time = current_time + 3;
+
+	queue.insert({ new_time, result, pins[2]->pid, cid }, new_time);
+}
+
 void TapComponentType::initialize_solver_registry_internal() {
 	solver_registry.clear();
 	solver_registry.insert("wire", &wire_solver);
 	solver_registry.insert("none", &none_solver);
 	solver_registry.insert("mixer", &mixer_solver);
+	solver_registry.insert("gate", &gate_solver);
 	print_line(vformat("TapComponentType: Registered %d solver functions.", TapComponentType::solver_registry.size()));
 }
 

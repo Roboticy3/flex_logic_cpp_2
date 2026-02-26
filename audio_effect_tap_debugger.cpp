@@ -51,17 +51,17 @@ void AudioEffectTapDebugger::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_samples"), &AudioEffectTapDebugger::get_samples);
 	ClassDB::bind_method(D_METHOD("get_stats"), &AudioEffectTapDebugger::get_stats);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapCircuit"), "set_simulator", "get_simulator");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "monitor_pids"), "set_monitor_pids", "get_monitor_pids");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live"), "set_live", "get_live");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "sample_count"), "set_sample_count", "get_sample_count");
 }
 
-Ref<TapSim> AudioEffectTapDebugger::get_simulator() const {
+Ref<TapCircuit> AudioEffectTapDebugger::get_simulator() const {
 	return ls.get_simulator();
 }
 
-void AudioEffectTapDebugger::set_simulator(Ref<TapSim> new_simulator) {
+void AudioEffectTapDebugger::set_simulator(Ref<TapCircuit> new_simulator) {
 	ls.set_simulator(new_simulator);
 }
 

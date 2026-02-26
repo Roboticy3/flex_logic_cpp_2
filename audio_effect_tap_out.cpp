@@ -28,7 +28,7 @@ void AudioEffectTapOut::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_sample_skip"), &AudioEffectTapOut::get_sample_skip);
 	ClassDB::bind_method(D_METHOD("set_sample_skip", "new_sample_skip"), &AudioEffectTapOut::set_sample_skip);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapCircuit"), "set_simulator", "get_simulator");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "output_pids"), "set_output_pids", "get_output_pids");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "input_pids"), "set_input_pids", "get_input_pids");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "reference_sim", PROPERTY_HINT_RESOURCE_TYPE, "ReferenceSim"), "set_reference_sim", "get_reference_sim");
@@ -41,11 +41,11 @@ bool AudioEffectTapOut::any_input_connected() {
 	return false;
 }
 
-Ref<TapSim> AudioEffectTapOut::get_simulator() const {
+Ref<TapCircuit> AudioEffectTapOut::get_simulator() const {
 	return ls_out.get_simulator();
 }
 
-void AudioEffectTapOut::set_simulator(Ref<TapSim> new_simulator) {
+void AudioEffectTapOut::set_simulator(Ref<TapCircuit> new_simulator) {
 	ls_out.set_simulator(new_simulator);
 	ls_in.set_simulator(new_simulator);
 }

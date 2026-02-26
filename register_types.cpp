@@ -2,15 +2,16 @@
 
 #include "audio_effect_tap_debugger.h"
 #include "audio_effect_tap_in.h"
-#include "audio_stream_tap_in.h"
 #include "audio_effect_tap_out.h"
 #include "register_types.h"
 #include "tap_component_type.h"
 #include "tap_network.h"
 #include "tap_patch_bay.h"
-#include "tap_sim.h"
+#include "tap_circuit.h"
 #include "reference_sim.h"
 #include "audio_stream_tap_probe.h"
+#include "audio_stream_tap_simulator.h"
+#include "audio_stream_primitive.h"
 
 void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
@@ -27,7 +28,7 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 
 	ClassDB::register_class<TapPatchBay>();
 	ClassDB::register_class<TapNetwork>();
-	ClassDB::register_class<TapSim>();
+	ClassDB::register_class<TapCircuit>();
 	ClassDB::register_class<ReferenceSim>();
 
 	ClassDB::register_class<AudioEffectTapIn>();
@@ -41,8 +42,9 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	
 	ClassDB::register_class<AudioStreamTapProbe>();
 	ClassDB::register_class<AudioStreamTapProbePlayback>();
-	ClassDB::register_class<AudioStreamTapIn>();
-	ClassDB::register_class<AudioStreamTapInPlayback>();
+	ClassDB::register_class<AudioStreamTapSimulator>();
+	ClassDB::register_class<AudioStreamTapSimulatorPlayback>();
+	ClassDB::register_class<AudioStreamPrimitive>();
 }
 
 void uninitialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
