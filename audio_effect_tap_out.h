@@ -5,9 +5,11 @@
 #include "servers/audio/audio_effect.h"
 
 #include "tap_circuit_types.h"
-#include "tap_sim.h"
+#include "tap_circuit.h"
 #include "tap_sim_live_switch.h"
 #include "reference_sim.h"
+
+class AudioEffectTapOut;
 
 /**
  * @brief AudioEffectInstance that solves the circuit on its audio process
@@ -38,7 +40,14 @@ class AudioEffectTapOutInstance : public AudioEffectInstance {
 	LocalVector<AudioFrame> outputs;
 	int mix_rate;
 
+	size_t event_count = 0;
+
+protected:
+	static void _bind_methods();
+
 public:
+	size_t get_event_count() const { return event_count; }
+
 	virtual void process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) override;
 	virtual bool process_silence() const override;
 
@@ -78,8 +87,8 @@ public:
 	 */
 	bool any_input_connected();
 
-	Ref<TapSim> get_simulator() const;
-	void set_simulator(Ref<TapSim> new_simulator);
+	Ref<TapCircuit> get_simulator() const;
+	void set_simulator(Ref<TapCircuit> new_simulator);
 
 	PackedInt64Array get_output_pids() const;
 	void set_output_pids(PackedInt64Array new_output_pids);

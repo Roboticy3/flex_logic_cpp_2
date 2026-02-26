@@ -1,6 +1,9 @@
+
 #include "core/object/object.h"
 #include "core/variant/variant.h"
 #include "servers/audio/audio_server.h"
+
+#include <iostream>
 
 #include "audio_effect_tap_out.h"
 
@@ -25,7 +28,7 @@ void AudioEffectTapOut::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_sample_skip"), &AudioEffectTapOut::get_sample_skip);
 	ClassDB::bind_method(D_METHOD("set_sample_skip", "new_sample_skip"), &AudioEffectTapOut::set_sample_skip);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapCircuit"), "set_simulator", "get_simulator");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "output_pids"), "set_output_pids", "get_output_pids");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "input_pids"), "set_input_pids", "get_input_pids");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "reference_sim", PROPERTY_HINT_RESOURCE_TYPE, "ReferenceSim"), "set_reference_sim", "get_reference_sim");
@@ -38,11 +41,11 @@ bool AudioEffectTapOut::any_input_connected() {
 	return false;
 }
 
-Ref<TapSim> AudioEffectTapOut::get_simulator() const {
+Ref<TapCircuit> AudioEffectTapOut::get_simulator() const {
 	return ls_out.get_simulator();
 }
 
-void AudioEffectTapOut::set_simulator(Ref<TapSim> new_simulator) {
+void AudioEffectTapOut::set_simulator(Ref<TapCircuit> new_simulator) {
 	ls_out.set_simulator(new_simulator);
 	ls_in.set_simulator(new_simulator);
 }
@@ -108,6 +111,12 @@ Ref<AudioEffectInstance> AudioEffectTapOut::instantiate() {
 	return instance;
 }
 
+void AudioEffectTapOutInstance::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_event_count"), &AudioEffectTapOutInstance::get_event_count);
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "event_count"), "", "get_event_count");
+}
+
 void AudioEffectTapOutInstance::process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
 	if (effect->get_live()) {
 		process_live(p_src_frames, p_dst_frames, p_frame_count);
@@ -135,10 +144,9 @@ bool AudioEffectTapOutInstance::process_silence() const {
 }
 
 void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
+	
 	tap_time_t target_time = total_time + p_frame_count * effect->get_simulator()->get_tick_rate();
-
-	if (effect->get_simulator()->get_latest_event_time() <= target_time) {
-		WARN_PRINT("Not enough events in simulator, skipping processing");
+	if (!effect->ls_out.try_lock(target_time, p_dst_frames, p_frame_count)) {
 		return;
 	}
 
@@ -156,7 +164,7 @@ void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, Aud
 			inputs[i] = patch_bay->get_pin_state_internal(input_pids[i]);
 		}
 
-		effect->get_simulator()->process_to(time);
+		event_count += effect->get_simulator()->process_to(time);
 
 		const PackedInt64Array &output_pids = effect->get_output_pids();
 		for (int i = 0; i < output_pids.size(); i++) {
@@ -169,15 +177,14 @@ void AudioEffectTapOutInstance::process_live(const AudioFrame *p_src_frames, Aud
 		}
 
 		AudioFrame total;
-		for (tap_label_t pid : effect->get_output_pids()) {
-			AudioFrame frame = patch_bay->get_pin_state_internal(pid);
-			if (Vector2i(frame.l, frame.r) == patch_bay->get_state_missing()) {
-				continue;
-			}
-			total += frame;
+		for (const AudioFrame &state : outputs) {
+			total += state;
 		}
 		p_dst_frames[i] = total;
 	}
 
 	total_time = target_time;
+	//std::cout << "frame sample: " << p_dst_frames[0].left << std::endl;
+	
+	effect->ls_out.unlock();
 }

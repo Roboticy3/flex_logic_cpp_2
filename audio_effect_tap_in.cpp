@@ -3,8 +3,9 @@
 #include "core/object/class_db.h"
 
 #include "audio_effect_tap_in.h"
+#include "core/object/object.h"
 #include "tap_circuit_types.h"
-#include "tap_sim.h"
+#include "tap_circuit.h"
 
 void AudioEffectTapIn::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_simulator"), &AudioEffectTapIn::get_simulator);
@@ -25,7 +26,7 @@ void AudioEffectTapIn::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_sample_skip"), &AudioEffectTapIn::get_sample_skip);
 	ClassDB::bind_method(D_METHOD("set_sample_skip", "new_sample_skip"), &AudioEffectTapIn::set_sample_skip);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapSim"), "set_simulator", "get_simulator");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "simulator", PROPERTY_HINT_RESOURCE_TYPE, "TapCircuit"), "set_simulator", "get_simulator");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "activation_delta", PROPERTY_HINT_RANGE, "0,1.0,0.001"), "set_activation_delta", "get_activation_delta");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "pid"), "set_pid", "get_pid");
 
@@ -50,32 +51,32 @@ void AudioEffectTapIn::set_activation_delta(tap_sample_t new_activation_delta) {
 	activation_delta = new_activation_delta;
 }
 
-Ref<TapSim> AudioEffectTapIn::get_simulator() const {
-	return simulator;
+Ref<TapCircuit> AudioEffectTapIn::get_simulator() const {
+	return ls_in.get_simulator();
 }
 
-void AudioEffectTapIn::set_simulator(Ref<TapSim> new_simulator) {
-	simulator = new_simulator;
-
-	if (simulator.is_null()) {
-		simulator.instantiate();
-	}
+void AudioEffectTapIn::set_simulator(Ref<TapCircuit> new_simulator) {
+	ls_in.set_simulator(new_simulator);
 }
 
 tap_label_t AudioEffectTapIn::get_pid() const {
-	return pid;
+	auto live_pids = ls_in.get_live_pids();
+	if (live_pids.is_empty()) {
+		return -1;
+	}
+	return live_pids[0];
 }
 
 void AudioEffectTapIn::set_pid(tap_label_t new_pid) {
-	pid = new_pid;
+	ls_in.set_live_pids(PackedInt64Array({new_pid}));
 }
 
 bool AudioEffectTapIn::get_line_in() const {
-	return line_in;
+	return ls_in.get_live();
 }
 
 void AudioEffectTapIn::set_line_in(bool new_line_in) {
-	line_in = new_line_in;
+	ls_in.set_live(new_line_in);
 }
 
 bool AudioEffectTapIn::get_line_out() const {
@@ -94,16 +95,18 @@ void AudioEffectTapIn::set_sample_skip(int new_sample_skip) {
 	sample_skip = new_sample_skip;
 }
 
-AudioEffectTapIn::AudioEffectTapIn() {
-	simulator.instantiate();
+void AudioEffectTapInInstance::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_event_count"), &AudioEffectTapInInstance::get_event_count);
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "event_count"), "", "get_event_count");
 }
 
 void AudioEffectTapInInstance::process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
-	if (effect->line_in) {
+	if (effect->get_line_in()) {
 		process_line_in(p_src_frames, p_dst_frames, p_frame_count);
 	}
 
-	if (effect->line_out) {
+	if (effect->get_line_out()) {
 		for (int i = 0; i < p_frame_count; i++) {
 			p_dst_frames[i] = p_src_frames[i];
 		}
@@ -111,6 +114,11 @@ void AudioEffectTapInInstance::process(const AudioFrame *p_src_frames, AudioFram
 }
 
 void AudioEffectTapInInstance::process_line_in(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) {
+	
+	if (!effect->ls_in.try_lock(0, p_dst_frames, p_frame_count)) {
+		return;
+	}
+	
 	for (int i = 0; i < p_frame_count; i += effect->sample_skip) {
 		AudioFrame src_frame = p_src_frames[i];
 
@@ -118,13 +126,16 @@ void AudioEffectTapInInstance::process_line_in(const AudioFrame *p_src_frames, A
 		delta += Math::abs(src_frame.right - last_activation.right);
 
 		if (delta >= effect->activation_delta) {
-			tap_time_t time = total_time + i * effect->simulator->get_tick_rate();
-			effect->simulator->push_event(time, src_frame, effect->pid);
+			tap_time_t time = total_time + i * effect->get_simulator()->get_tick_rate();
+			effect->get_simulator()->push_event(time, src_frame, effect->get_pid());
 			last_activation = src_frame;
+			event_count++;
 		}
 	}
 
-	total_time += p_frame_count * effect->simulator->get_tick_rate();
+	total_time += p_frame_count * effect->get_simulator()->get_tick_rate();
+
+	effect->ls_in.unlock();
 }
 
 bool AudioEffectTapInInstance::process_silence() const {

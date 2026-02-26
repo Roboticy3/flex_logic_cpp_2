@@ -6,7 +6,6 @@
 #include "thirdparty/harfbuzz/src/hb-priority-queue.hh"
 
 #include "core/string/string_name.h"
-#include "core/templates/span.h"
 #include "core/templates/vector.h"
 
 /*
@@ -68,9 +67,9 @@ struct circuit_component_type_t {
 
 	StringName name;
 	Vector<int> sensitive;
-	int pin_count;
+	int pin_count = -1;
 	//state vector corresponds to sensitive pins
-	solver_t solver;
+	solver_t solver = nullptr;
 };
 
 /*

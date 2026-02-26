@@ -114,7 +114,8 @@ tap_component_t TapNetwork::validate_pin_labels_and_type(PackedInt64Array pin_la
 	auto o_component_type = component_types.label_get(component_type_index);
 	if (!o_component_type.has_value()) {
 		//invalid component type index
-		WARN_PRINT("TapNetwork::validate_pin_labels_and_type: invalid component type index " + itos(component_type_index) + ". Defaulting to wire type.");
+		//WARN_PRINT("TapNetwork::validate_pin_labels_and_type: invalid component type index " + itos(component_type_index) + ". Defaulting to wire type.");
+		//adding wires is actually pretty convenient. Removing this warning for now.
 	}
 	Ref<TapComponentType> component_type = o_component_type.has_value() ? o_component_type.value() : Ref<TapComponentType>();
 

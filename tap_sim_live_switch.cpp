@@ -1,12 +1,14 @@
+#include <mutex>
+
 #include "core/variant/variant.h"
 
-#include "tap_sim.h"
+#include "tap_circuit.h"
 #include "tap_sim_live_switch.h"
 
-Ref<TapSim> TapSimLiveSwitch::get_simulator() const {
+Ref<TapCircuit> TapSimLiveSwitch::get_simulator() const {
 	return simulator;
 }
-void TapSimLiveSwitch::set_simulator(Ref<TapSim> new_simulator) {
+void TapSimLiveSwitch::set_simulator(Ref<TapCircuit> new_simulator) {
 	simulator = new_simulator;
 
 	//re-validate the live state
@@ -53,4 +55,71 @@ void TapSimLiveSwitch::set_live(bool new_live) {
 	}
 
 	live = new_live;
+}
+
+static void fill_audio_buffer(AudioFrame *p_dst_frames, int p_frame_count) {
+	for (int i = 0; i < p_frame_count; i++) {
+		p_dst_frames[i] = AudioFrame(0.0f, 0.0f);
+	}
+}
+
+bool TapSimLiveSwitch::try_lock(tap_time_t end_time, AudioFrame *p_dst_frames, int p_frame_count) {
+	//guarantee simulator exists and should be live
+	if (!live) {
+		fill_audio_buffer(p_dst_frames, p_frame_count);
+		return false;
+	}
+
+	//make simulator safe to read
+	std::recursive_mutex &mutex = simulator->get_mutex();
+	if (!mutex.try_lock()) {
+		fill_audio_buffer(p_dst_frames, p_frame_count);
+		return false;
+	}
+
+	if (end_time == 0) {
+		return true;
+	}
+
+	//read the latest event time and compare with end_time
+	tap_time_t latest_event_time = simulator->get_latest_event_time();
+	
+	if (latest_event_time < end_time) {
+		mutex.unlock();
+		fill_audio_buffer(p_dst_frames, p_frame_count);
+		return false;
+	}
+
+	return true;
+}
+
+bool TapSimLiveSwitch::lock() const {
+	if (simulator.is_null()) {
+		return false;
+	}
+	simulator->get_mutex().lock();
+	return true;
+}
+
+bool TapSimLiveSwitch::unlock() const {
+	if (simulator.is_null()) {
+		return false;
+	}
+	
+	std::recursive_mutex &mutex = simulator->get_mutex();
+
+	mutex.unlock();
+	
+	return true;
+}
+
+bool TapSimLiveSwitch::unlock() {
+	if (simulator.is_null()) {
+		return false;
+	}
+	
+	std::recursive_mutex &mutex = simulator->get_mutex();
+	mutex.unlock();
+	
+	return true;
 }

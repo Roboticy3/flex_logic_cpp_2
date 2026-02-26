@@ -1,3 +1,4 @@
+#include <iostream>
 
 #include "core/object/class_db.h"
 
@@ -71,7 +72,7 @@ Vector2 ReferenceSim::measure_error(PackedVector2Array solution, PackedVector2Ar
   return Vector2(error.l, error.r);
 }
 
-AudioFrame ReferenceSim::measure_error_internal(const LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem, float delta_time) {
+AudioFrame ReferenceSim::measure_error_internal(const LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem, double delta_time) {
   AudioFrame error = reference_sim_func(solution, problem);
   error.l = error.l < 0 ? -error.l : error.l;
   error.r = error.r < 0 ? -error.r : error.r;
@@ -82,6 +83,7 @@ AudioFrame ReferenceSim::measure_error_internal(const LocalVector<AudioFrame> &s
 AudioFrame reference_mixer_no_peak(const LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
 
   if (solution.is_empty()) {
+    std::cout << "ReferenceSim: Solution is empty" << std::endl;
     return AudioFrame(Math::INF, Math::INF);
   }
 

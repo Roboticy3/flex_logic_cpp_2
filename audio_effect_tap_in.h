@@ -4,7 +4,10 @@
 #include "servers/audio/audio_effect.h"
 
 #include "tap_circuit_types.h"
-#include "tap_sim.h"
+#include "tap_circuit.h"
+#include "tap_sim_live_switch.h"
+
+class AudioEffectTapIn;
 
 /**
  * @brief Reference an AudioEffectTapIn and execute on audio using its
@@ -27,8 +30,14 @@ class AudioEffectTapInInstance : public AudioEffectInstance {
 	//instance specific state
 	AudioFrame last_activation;
 	tap_time_t total_time = 0;
+	size_t event_count = 0;
+
+protected:
+	static void _bind_methods();
 
 public:
+	size_t get_event_count() const { return event_count; }
+
 	virtual void process(const AudioFrame *p_src_frames, AudioFrame *p_dst_frames, int p_frame_count) override;
 	virtual bool process_silence() const override;
 
@@ -40,11 +49,11 @@ public:
 };
 
 /**
- * @brief Referencing a TapSim and a single pin id for input, create an
+ * @brief Referencing a TapCircuit and a single pin id for input, create an
  * AudioEffectInstance to convert audio samples into events and push them into
  * `simulator` with simulation time sample# * `simulator->tick_rate`.
  *
- * @param simulator The target TapSim events are fed into
+ * @param simulator The target TapCircuit events are fed into
  * @param pid The target pin in `simulator` events are fed into
  * @param activation_delta The difference between samples in amplitude
  *  constituting an "event". When set to 1 or lower, any change in audio level
@@ -60,11 +69,10 @@ class AudioEffectTapIn : public AudioEffect {
 
 	friend class AudioEffectTapInInstance;
 
-	Ref<TapSim> simulator;
 	tap_sample_t activation_delta = 0.0;
-	tap_label_t pid = 0;
+	
+	TapSimLiveSwitch ls_in;
 
-	bool line_in = true;
 	bool line_out = false;
 
 	int sample_skip = 2;
@@ -75,8 +83,8 @@ protected:
 public:
 	virtual Ref<AudioEffectInstance> instantiate() override;
 
-	Ref<TapSim> get_simulator() const;
-	void set_simulator(Ref<TapSim> new_simulator);
+	Ref<TapCircuit> get_simulator() const;
+	void set_simulator(Ref<TapCircuit> new_simulator);
 
 	tap_sample_t get_activation_delta() const;
 	void set_activation_delta(tap_sample_t new_activation_delta);
@@ -92,6 +100,4 @@ public:
 
 	int get_sample_skip() const;
 	void set_sample_skip(int new_sample_skip);
-
-	AudioEffectTapIn();
 };
