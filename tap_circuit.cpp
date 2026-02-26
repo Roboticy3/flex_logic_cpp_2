@@ -19,6 +19,7 @@ void TapCircuit::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_tick_rate", "new_tick_rate"), &TapCircuit::set_tick_rate);
 
 	ClassDB::bind_method(D_METHOD("get_latest_event_time"), &TapCircuit::get_latest_event_time);
+	ClassDB::bind_method(D_METHOD("get_event_count"), &TapCircuit::get_event_count);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "network", PROPERTY_HINT_RESOURCE_TYPE, "TapNetwork"), "set_network", "get_network");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "patch_bay", PROPERTY_HINT_RESOURCE_TYPE, "TapPatchBay"), "set_patch_bay", "get_patch_bay");

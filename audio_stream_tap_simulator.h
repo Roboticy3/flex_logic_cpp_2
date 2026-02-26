@@ -12,7 +12,7 @@
  * @brief A TapCircuit driver that maps AudioStreams to input pids for input,
  * and sums output from output pids.
  *
- * @param input_streams A dictionary mapping tap labels to AudioStreams.
+ * @param input_streams A vector of AudioStreams mapped to circuit pids.
  * @param debug_input_override If a stream is mapped to this label, pipe
  * directly to the output instead of through the circuit. Good for toggling.
  * @param output_pids Pids that should be summed for the output
@@ -31,7 +31,12 @@ class AudioStreamTapSimulator : public AudioStream {
   GDCLASS(AudioStreamTapSimulator, AudioStream);
   friend class AudioStreamTapSimulatorPlayback;
 
-  HashMap<tap_label_t,Ref<AudioStream>> input_streams;
+  struct stream_pid_t {
+    Ref<AudioStream> stream;
+    tap_label_t pid;
+  };
+
+  LocalVector<stream_pid_t> input_streams;
   tap_label_t debug_input_override = -1;
   
   PackedInt64Array output_pids;
@@ -103,6 +108,18 @@ public:
  *
  * @param owner The AudioStreamTapSimulator that owns this playback.
  * @param current_time The current time in the circuit.
+ *
+ * @param debug_input_pids Pids that can be piped directly to the output
+ * instead of through the circuit. Good for toggling.
+ *
+ * @param problem `mix_out`'s input pids state before each circuit execution.
+ * Used to validate circuit behavior against `owner->reference_sim`.
+ * @param solution `mix_out`'s output pids state after each circuit execution.
+ * Used to validate circuit behavior against `owner->reference_sim`.
+ * @param mix_rate The sample rate of the audio being mixed. Used to compute
+ * delta time when incrementing `owner->reference_sim`'s error.
+ *
+ * @param processed_events_count The number of events processed by the circuit.
  */
 class AudioStreamTapSimulatorPlayback : public AudioStreamPlaybackResampled {
   GDCLASS(AudioStreamTapSimulatorPlayback, AudioStreamPlaybackResampled);
@@ -116,6 +133,13 @@ class AudioStreamTapSimulatorPlayback : public AudioStreamPlaybackResampled {
 
   AudioStreamTapSimulator *owner = nullptr;
   tap_time_t current_time = 0;
+  size_t processed_events_count = 0;
+
+  HashSet<tap_label_t> debug_input_pids;
+
+  LocalVector<AudioFrame> problem;
+  LocalVector<AudioFrame> solution;
+  double mix_rate = 44100.0;
 
 protected:
   static void _bind_methods();
