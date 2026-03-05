@@ -19,6 +19,8 @@
  *
  * @param circuit The TapCircuit to simulate.
  * @param reference_sim A function to test the current circuit against
+ * @param tolerance The maximum error that can exist in `owner->reference_sim`'s
+ * total before the circuit is considered an invalid solution.
  *
  * @param sample_skip Divides the number of samples passed to the circuit per 
  * second.
@@ -43,6 +45,7 @@ class AudioStreamTapSimulator : public AudioStream {
 
   Ref<TapCircuit> circuit;
   Ref<ReferenceSim> reference_sim;
+  float tolerance = 0.01f;
 
   int sample_skip = 2;
   int tick_rate = 1024;
@@ -61,19 +64,22 @@ protected:
 
 public:
   TypedDictionary<tap_label_t, Ref<AudioStream>> get_input_streams() const;
-  void set_input_streams(const TypedDictionary<tap_label_t, Ref<AudioStream>> &streams);
+  void set_input_streams(const TypedDictionary<tap_label_t, Ref<AudioStream>> &new_input_streams);
 
   tap_label_t get_debug_input_override() const;
-  void set_debug_input_override(tap_label_t label);
+  void set_debug_input_override(tap_label_t new_debug_input_override);
 
   PackedInt64Array get_output_pids() const;
-  void set_output_pids(const PackedInt64Array &pids);
+  void set_output_pids(const PackedInt64Array &new_output_pids);
 
   Ref<TapCircuit> get_circuit() const;
-  void set_circuit(Ref<TapCircuit> circuit);
+  void set_circuit(Ref<TapCircuit> new_circuit);
 
   Ref<ReferenceSim> get_reference_sim() const;
-  void set_reference_sim(Ref<ReferenceSim> reference_sim);
+  void set_reference_sim(Ref<ReferenceSim> new_reference_sim);
+
+  float get_tolerance() const;
+  void set_tolerance(float new_tolerance);
 
   int get_sample_skip() const;
   void set_sample_skip(int sample_skip);
@@ -116,6 +122,7 @@ public:
  * Used to validate circuit behavior against `owner->reference_sim`.
  * @param solution `mix_out`'s output pids state after each circuit execution.
  * Used to validate circuit behavior against `owner->reference_sim`.
+ *
  * @param mix_rate The sample rate of the audio being mixed. Used to compute
  * delta time when incrementing `owner->reference_sim`'s error.
  *
@@ -139,6 +146,7 @@ class AudioStreamTapSimulatorPlayback : public AudioStreamPlaybackResampled {
 
   LocalVector<AudioFrame> problem;
   LocalVector<AudioFrame> solution;
+
   double mix_rate = 44100.0;
 
 protected:

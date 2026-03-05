@@ -1,4 +1,5 @@
 #include "audio_stream_tap_simulator.h"
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/variant/variant.h"
 #include "servers/audio/audio_stream.h"
@@ -27,6 +28,10 @@ void AudioStreamTapSimulator::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_reference_sim"), &AudioStreamTapSimulator::get_reference_sim);
   ClassDB::bind_method(D_METHOD("set_reference_sim", "reference_sim"), &AudioStreamTapSimulator::set_reference_sim);
   ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "reference_sim", PROPERTY_HINT_RESOURCE_TYPE, "ReferenceSim"), "set_reference_sim", "get_reference_sim");
+
+  ClassDB::bind_method(D_METHOD("get_tolerance"), &AudioStreamTapSimulator::get_tolerance);
+  ClassDB::bind_method(D_METHOD("set_tolerance", "tolerance"), &AudioStreamTapSimulator::set_tolerance);
+  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "tolerance"), "set_tolerance", "get_tolerance");
 
   ClassDB::bind_method(D_METHOD("get_sample_skip"), &AudioStreamTapSimulator::get_sample_skip);
   ClassDB::bind_method(D_METHOD("set_sample_skip", "sample_skip"), &AudioStreamTapSimulator::set_sample_skip);
@@ -169,6 +174,14 @@ void AudioStreamTapSimulator::set_reference_sim(Ref<ReferenceSim> new_reference_
   if (circuit.is_valid()) {
     circuit->get_mutex().unlock();
   }
+}
+
+float AudioStreamTapSimulator::get_tolerance() const {
+  return tolerance; //tolerance doesn't interact with the circuit directly, so it doesn't need mutexing
+}
+
+void AudioStreamTapSimulator::set_tolerance(float new_tolerance) {
+  tolerance = new_tolerance;
 }
 
 int AudioStreamTapSimulator::get_tick_rate() const {
