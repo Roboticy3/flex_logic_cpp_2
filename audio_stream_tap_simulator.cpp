@@ -41,6 +41,9 @@ void AudioStreamTapSimulator::_bind_methods() {
 
   ClassDB::bind_method(D_METHOD("get_event_counts"), &AudioStreamTapSimulator::get_event_counts);
   ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "event_counts"), "", "get_event_counts");
+
+  ClassDB::bind_method(D_METHOD("can_simulate"), &AudioStreamTapSimulator::can_simulate);
+  ClassDB::bind_method(D_METHOD("is_simulating"), &AudioStreamTapSimulator::is_simulating);
 }
 
 TypedDictionary<tap_label_t, Ref<AudioStream>> AudioStreamTapSimulator::get_input_streams() const {

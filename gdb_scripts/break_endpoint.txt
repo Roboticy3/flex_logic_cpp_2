@@ -1,0 +1,9 @@
+start
+b AudioStreamTapSimulatorPlayback::start
+b AudioStreamTapSimulator::set_input_streams
+b AudioStreamTapSimulator::set_output_pids
+b AudioStreamTapSimulator::set_circuit
+b AudioStreamTapSimulator::set_reference_sim
+b AudioStreamTapSimulator::set_tick_rate
+b AudioStreamTapSimulator::set_sample_skip
+c
