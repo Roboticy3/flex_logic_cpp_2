@@ -95,8 +95,17 @@ AudioFrame reference_mixer_no_peak(const LocalVector<AudioFrame> &solution, cons
   return mix - solution[0];
 }
 
+AudioFrame reference_identity(const LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
+  AudioFrame error;
+  for (int i = 0; i < MIN(solution.size(), problem.size()); i++) {
+    error = error + (solution[i] - problem[i]);
+  }
+  return error;
+}
+
 void ReferenceSim::initialize_reference_registry_internal() {
   reference_registry["mixer_no_peak"] = reference_mixer_no_peak;
+  reference_registry["identity"] = reference_identity;
   print_line(vformat("ReferenceSim: Registered %d reference functions.", reference_registry.size()));
 }
 
