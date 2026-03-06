@@ -44,11 +44,12 @@ void AudioStreamTapSimulator::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_live"), &AudioStreamTapSimulator::is_simulating);
   ADD_PROPERTY(PropertyInfo(Variant::BOOL, "live", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "", "get_live");
 
-  ClassDB::bind_method(D_METHOD("get_event_counts"), &AudioStreamTapSimulator::get_event_counts);
-  ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "event_counts"), "", "get_event_counts");
-
   ClassDB::bind_method(D_METHOD("can_simulate"), &AudioStreamTapSimulator::can_simulate);
   ClassDB::bind_method(D_METHOD("is_simulating"), &AudioStreamTapSimulator::is_simulating);
+
+  ClassDB::bind_method(D_METHOD("get_playback", "pid"), &AudioStreamTapSimulator::get_playback);
+  ClassDB::bind_method(D_METHOD("get_event_counts"), &AudioStreamTapSimulator::get_event_counts);
+  
 }
 
 TypedDictionary<tap_label_t, Ref<AudioStream>> AudioStreamTapSimulator::get_input_streams() const {
@@ -285,6 +286,20 @@ bool AudioStreamTapSimulator::can_simulate() const {
   return true;
 }
 
+Ref<AudioStreamPlayback> AudioStreamTapSimulator::get_playback(tap_label_t pid) const {
+  if (!circuit.is_valid()) {
+    return Ref<AudioStreamPlayback>();
+  }
+
+  std::lock_guard<std::recursive_mutex> lock(circuit->get_mutex());
+  
+  if (!trackers.has(pid)) {
+    return Ref<AudioStreamPlayback>();
+  }
+  
+  return trackers[pid].playback;
+}
+
 Ref<AudioStreamPlayback> AudioStreamTapSimulator::instantiate_playback() {
 
   trackers.clear();
@@ -296,7 +311,7 @@ Ref<AudioStreamPlayback> AudioStreamTapSimulator::instantiate_playback() {
       return Ref<AudioStreamPlayback>();
     }
 
-    trackers[kv.pid] = {stream->instantiate_playback(), 0};
+    trackers[kv.pid] = {stream->instantiate_playback()};
   }
 
   // Create a new instance of AudioStreamTapSimulatorPlayback
@@ -325,7 +340,8 @@ PackedInt64Array AudioStreamTapSimulator::get_event_counts() const {
   
   PackedInt64Array arr;
   for (auto kv: trackers) {
-    arr.push_back(kv.value.event_count);
+    Ref<AudioStreamPlayback> playback = kv.value.playback;
+    arr.push_back(playback.is_valid() ? playback->get_loop_count() : 0);
   }
   return arr;
 }
@@ -390,8 +406,13 @@ int AudioStreamTapSimulatorPlayback::mix_in(float p_rate_scale, int p_frames) {
 					any_active = true;
 				}
 
-        tracker.playback->mix(mix_buffer, p_rate_scale, to_mix);
-        for (int j = 0; j < to_mix; j += owner->sample_skip) {  
+        int mixed = tracker.playback->mix(mix_buffer, p_rate_scale, to_mix);
+        
+        if (mixed < to_mix) {
+          std::cout << "AudioStreamPlayback " << tracker.playback.ptr() << " mixed " << (to_mix - mixed) << " under expected frame count!\n";
+        }
+        
+        for (int j = 0; j < mixed; j += owner->sample_skip) {  
           //input circuit events here.
           tap_time_t time = rolling_time + (j * p_rate_scale) * owner->tick_rate;
           owner->circuit->push_event(time, mix_buffer[j], label);
@@ -412,6 +433,7 @@ int AudioStreamTapSimulatorPlayback::mix_in(float p_rate_scale, int p_frames) {
 		stop();
     ERR_PRINT("AudioStreamTapSimulatorPlayback::mix_in tried to push events with no active input streams.");
 	}
+  
 	return p_frames;
 }
 
@@ -468,16 +490,31 @@ int AudioStreamTapSimulatorPlayback::mix_stats(AudioFrame *p_buffer, float p_rat
   }
 
   avg /= (float)p_frames;
-
-  std::cout << "AudioStreamTapSimulatorPlayback::mix_stats: " << avg.left << ", " << avg.right << std::endl;
-  
+    
   return p_frames;
+}
+
+void AudioStreamTapSimulatorPlayback::mix_force_loop() {
+  if (!owner->force_loop) {
+    return;
+  }
+
+  for (auto &pair : owner->trackers) {
+    Ref<AudioStreamPlayback> playback = pair.value.playback;
+    if (playback.is_valid() && !playback->is_playing()) {
+      playback->start(0.0);
+    }
+
+    pair.value.loop_count++;
+  }
 }
 
 int AudioStreamTapSimulatorPlayback::mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
   if (!owner->circuit->get_mutex().try_lock()) {
     return p_frames;
   }
+
+  mix_force_loop();
 
   mix_debug(p_buffer, p_rate_scale, p_frames);
 

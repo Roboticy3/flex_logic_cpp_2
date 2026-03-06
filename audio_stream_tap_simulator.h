@@ -13,6 +13,9 @@
  * and sums output from output pids.
  *
  * @param input_streams A vector of AudioStreams mapped to circuit pids.
+ * @param force_loop If true, inputs are forced to loop externally by the child
+ * AudioStreamTapSimulatorPlayback.
+ *
  * @param debug_input_override If a stream is mapped to this label, pipe
  * directly to the output instead of through the circuit. Good for toggling.
  * @param output_pids Pids that should be summed for the output
@@ -39,6 +42,8 @@ class AudioStreamTapSimulator : public AudioStream {
   };
 
   LocalVector<stream_pid_t> input_streams;
+  bool force_loop = true;
+
   tap_label_t debug_input_override = -1;
   
   PackedInt64Array output_pids;
@@ -47,12 +52,22 @@ class AudioStreamTapSimulator : public AudioStream {
   Ref<ReferenceSim> reference_sim;
   float tolerance = 0.01f;
 
-  int sample_skip = 2;
+  int sample_skip = 4;
   int tick_rate = 1024;
 
+  /**
+   * @brief Internal state for tracking playback progress.
+   *
+   * @param playback The AudioStreamPlayback for the input stream.
+   * @param last_playback_position The last position in the input stream. Unused
+   * @param loop_count The number of forced loops.
+   * @param event_count The total events added to this pid.
+   */
   struct playback_tracker_t {
     Ref<AudioStreamPlayback> playback;
-    size_t event_count;
+    double last_playback_position = 0.0; //unused
+    int loop_count = 0; 
+    size_t event_count = 0;
   };
 
   HashMap<tap_label_t,playback_tracker_t> trackers;
@@ -87,6 +102,8 @@ public:
   int get_tick_rate() const;
   void set_tick_rate(int tick_rate);
 
+  Ref<AudioStreamPlayback> get_playback(tap_label_t pid) const;
+
   /**
    * @brief Returns true if all tracked playbacks are playing.
    */
@@ -113,6 +130,7 @@ public:
  * @param mix_buffer A temporary buffer for audio.
  *
  * @param owner The AudioStreamTapSimulator that owns this playback.
+ *
  * @param current_time The current time in the circuit.
  *
  * @param debug_input_pids Pids that can be piped directly to the output
@@ -133,12 +151,13 @@ class AudioStreamTapSimulatorPlayback : public AudioStreamPlaybackResampled {
   friend class AudioStreamTapSimulator;
 
   enum {
-		MIX_BUFFER_SIZE = 128
+		MIX_BUFFER_SIZE = 128,
 	};
 
   AudioFrame mix_buffer[MIX_BUFFER_SIZE];
 
   AudioStreamTapSimulator *owner = nullptr;
+
   tap_time_t current_time = 0;
   size_t processed_events_count = 0;
 
@@ -178,6 +197,15 @@ public:
    * Prints the average level for each channel to std::cout.
    */
   int mix_stats(AudioFrame *p_buffer, float p_rate_scale, int p_frames);
+
+  /**
+   * @brief Update `input_playback_positions` with the current playback 
+   * positions of each input stream.
+   *
+   * If any playback positions are before the matching stored playback, count
+   * a loop and reset the reference error.
+   */
+  void mix_force_loop();
 
 	/**
    * @brief Schedule and call all the other mix methods.
