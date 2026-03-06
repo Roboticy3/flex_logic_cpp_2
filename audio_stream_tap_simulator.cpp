@@ -46,10 +46,11 @@ void AudioStreamTapSimulator::_bind_methods() {
 
   ClassDB::bind_method(D_METHOD("can_simulate"), &AudioStreamTapSimulator::can_simulate);
   ClassDB::bind_method(D_METHOD("is_simulating"), &AudioStreamTapSimulator::is_simulating);
+  ClassDB::bind_method(D_METHOD("is_circuit_correct"), &AudioStreamTapSimulator::is_circuit_correct);
 
   ClassDB::bind_method(D_METHOD("get_playback", "pid"), &AudioStreamTapSimulator::get_playback);
   ClassDB::bind_method(D_METHOD("get_event_counts"), &AudioStreamTapSimulator::get_event_counts);
-  
+  ClassDB::bind_method(D_METHOD("get_loop_count", "pid"), &AudioStreamTapSimulator::get_loop_count);
 }
 
 TypedDictionary<tap_label_t, Ref<AudioStream>> AudioStreamTapSimulator::get_input_streams() const {
@@ -236,6 +237,27 @@ void AudioStreamTapSimulator::set_sample_skip(int new_sample_skip) {
   }
 }
 
+bool AudioStreamTapSimulator::is_circuit_correct() const {
+  if (circuit.is_valid()) {
+    circuit->get_mutex().lock();
+  } else {
+    return false;
+  }
+
+  if (reference_sim.is_null()) {
+    return false;
+  }
+  
+  AudioFrame error = reference_sim->get_total_error();
+  bool is_correct = error.l < tolerance && error.r < tolerance;
+  
+  if (circuit.is_valid()) {
+    circuit->get_mutex().unlock();
+  }
+  
+  return is_correct;
+}
+
 bool AudioStreamTapSimulator::is_simulating() const {
   if (circuit.is_valid()) {
     circuit->get_mutex().lock();
@@ -298,6 +320,20 @@ Ref<AudioStreamPlayback> AudioStreamTapSimulator::get_playback(tap_label_t pid) 
   }
   
   return trackers[pid].playback;
+}
+
+int AudioStreamTapSimulator::get_loop_count(tap_label_t pid) const {
+  if (!circuit.is_valid()) {
+    return -1;
+  }
+
+  std::lock_guard<std::recursive_mutex> lock(circuit->get_mutex());
+  
+  if (!trackers.has(pid)) {
+    return -1;
+  }
+  
+  return trackers[pid].loop_count;
 }
 
 Ref<AudioStreamPlayback> AudioStreamTapSimulator::instantiate_playback() {
@@ -503,9 +539,8 @@ void AudioStreamTapSimulatorPlayback::mix_force_loop() {
     Ref<AudioStreamPlayback> playback = pair.value.playback;
     if (playback.is_valid() && !playback->is_playing()) {
       playback->start(0.0);
+      pair.value.loop_count++;
     }
-
-    pair.value.loop_count++;
   }
 }
 

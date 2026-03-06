@@ -102,7 +102,14 @@ public:
   int get_tick_rate() const;
   void set_tick_rate(int tick_rate);
 
+  int get_loop_count(tap_label_t pid) const;
   Ref<AudioStreamPlayback> get_playback(tap_label_t pid) const;
+
+  /**
+   * @brief Returns true if the circuit is valid and the total reference error
+   * is less than `tolerance`.
+   */
+  bool is_circuit_correct() const;
 
   /**
    * @brief Returns true if all tracked playbacks are playing.
