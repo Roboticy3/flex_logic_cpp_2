@@ -1,5 +1,6 @@
 #include <mutex>
 #include <optional>
+#include <iostream>
 
 #include "core/object/class_db.h"
 
@@ -30,6 +31,8 @@ void TapCircuit::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("process_to"), &TapCircuit::process_to);
 	ClassDB::bind_method(D_METHOD("clear"), &TapCircuit::clear);
 	ClassDB::bind_method(D_METHOD("instantiate"), &TapCircuit::instantiate);
+
+	ClassDB::bind_method(D_METHOD("are_any_pids_connected", "from", "to"), &TapCircuit::are_any_pids_connected);
 }
 
 Ref<TapNetwork> TapCircuit::get_network() const {
@@ -70,6 +73,89 @@ tap_time_t TapCircuit::get_latest_event_time() const {
 size_t TapCircuit::get_event_count() const {
 	std::lock_guard<std::recursive_mutex> lock(mutex);
 	return patch_bay->get_queue_internal().get_population();
+}
+
+bool TapCircuit::are_any_pids_connected(PackedInt64Array from, PackedInt64Array to) const {
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+
+	if (from.size() == 0 || to.size() == 0) {
+		return false;
+	}
+
+	HashSet<tap_label_t> end_pids;
+	for (int i = 0; i < to.size(); i++) {
+		end_pids.insert(to[i]);
+	}
+
+	for (tap_label_t start_pid : from) {
+		std::cout << "testing from: " << start_pid << std::endl;
+
+		auto o_start = patch_bay->get_pin_internal(start_pid);
+		if (!o_start.has_value()) {
+			return false;
+		}
+
+		//directed dfs from start to end, treating pins as vertices and components as
+		//edges
+		LocalVector<tap_pin_t> stack_pins = { o_start.value() };
+		HashSet<tap_label_t> visited_pids = { start_pid };
+		HashSet<tap_label_t> visited_cids;
+
+		while (!stack_pins.is_empty()) {
+
+			size_t stack_end = stack_pins.size() - 1;
+			const tap_pin_t pin = stack_pins[stack_end];
+			
+			stack_pins.resize(stack_end);
+			
+			for (tap_label_t cid : pin.components) {
+
+				auto o_component = network->get_component_internal(cid);
+				
+				/* This case should be covered via the network interface.
+				 * Likewise for pins.
+				if (!o_component.has_value()) {
+					continue;
+				}
+				*/
+
+				if (visited_cids.has(cid)) {
+					std::cout << "\tskipping component: " << cid << std::endl;
+					continue;
+				}
+
+				std::cout << "\tvisiting component: " << cid << std::endl;
+				visited_cids.insert(cid);
+
+				const tap_component_t &component = o_component.value();
+				for (tap_label_t pid2 : component.pins) {
+
+					auto o_pin2 = patch_bay->get_pin_internal(pid2);
+					/*
+					if (!o_pin2.has_value()) {
+						continue;
+					}
+					*/
+
+					if (end_pids.has(pid2)) {
+						std::cout << "\t\tfound end pin: " << pid2 << std::endl;
+						return true;
+					}
+
+					if (visited_pids.has(pid2)) {
+						std::cout << "\t\tskipping pin: " << pid2 << std::endl;
+						continue;
+					}
+
+					std::cout << "\t\tvisiting pin: " << pid2 << std::endl;
+					visited_pids.insert(pid2);
+					stack_pins.push_back(o_pin2.value());
+				}
+			}
+		}
+	}
+
+	return false;
 }
 
 void TapCircuit::process_once_internal(tap_queue_t &queue) {

@@ -567,13 +567,15 @@ int AudioStreamTapSimulatorPlayback::mix(AudioFrame *p_buffer, float p_rate_scal
 }
 
 void AudioStreamTapSimulatorPlayback::start(double p_from_pos) {
-  if (owner->can_simulate()) {
-    current_time = 0.0;
+  current_time = 0.0;
 
+  if (owner->can_simulate()) {
     for (auto kv : owner->trackers) {
       kv.value.event_count = 0;
       kv.value.playback->start(p_from_pos);
     }
+  } else {
+    stop();
   }
 }
 
