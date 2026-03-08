@@ -545,8 +545,8 @@ void AudioStreamTapSimulatorPlayback::mix_force_loop() {
 }
 
 int AudioStreamTapSimulatorPlayback::mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
-  if (!owner->circuit->get_mutex().try_lock()) {
-    return p_frames;
+  if (!playing ||!owner->circuit->get_mutex().try_lock()) {
+    return 0;
   }
 
   mix_force_loop();
@@ -569,8 +569,13 @@ int AudioStreamTapSimulatorPlayback::mix(AudioFrame *p_buffer, float p_rate_scal
 void AudioStreamTapSimulatorPlayback::start(double p_from_pos) {
   current_time = 0.0;
 
+  if (playing) {
+    stop();
+  }
+
   //these conditions don't work for some reason.
   if (owner->can_simulate()) {
+    playing = true;
     for (auto kv : owner->trackers) {
       kv.value.event_count = 0;
       kv.value.playback->start(p_from_pos);
@@ -581,6 +586,8 @@ void AudioStreamTapSimulatorPlayback::start(double p_from_pos) {
 }
 
 void AudioStreamTapSimulatorPlayback::stop() {
+  playing = false;
+  
   if (owner->is_simulating()) {
     for (auto kv : owner->trackers) {
       kv.value.playback->stop();

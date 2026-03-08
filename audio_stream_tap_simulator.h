@@ -174,6 +174,7 @@ class AudioStreamTapSimulatorPlayback : public AudioStreamPlaybackResampled {
   LocalVector<AudioFrame> solution;
 
   double mix_rate = 44100.0;
+  bool playing = false;
 
 protected:
   static void _bind_methods();
