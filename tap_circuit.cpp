@@ -88,7 +88,7 @@ bool TapCircuit::are_any_pids_connected(PackedInt64Array from, PackedInt64Array 
 	}
 
 	for (tap_label_t start_pid : from) {
-		std::cout << "testing from: " << start_pid << std::endl;
+		//std::cout << "testing from: " << start_pid << std::endl;
 
 		auto o_start = patch_bay->get_pin_internal(start_pid);
 		if (!o_start.has_value()) {
@@ -120,11 +120,11 @@ bool TapCircuit::are_any_pids_connected(PackedInt64Array from, PackedInt64Array 
 				*/
 
 				if (visited_cids.has(cid)) {
-					std::cout << "\tskipping component: " << cid << std::endl;
+					//std::cout << "\tskipping component: " << cid << std::endl;
 					continue;
 				}
 
-				std::cout << "\tvisiting component: " << cid << std::endl;
+				//std::cout << "\tvisiting component: " << cid << std::endl;
 				visited_cids.insert(cid);
 
 				const tap_component_t &component = o_component.value();
@@ -138,16 +138,16 @@ bool TapCircuit::are_any_pids_connected(PackedInt64Array from, PackedInt64Array 
 					*/
 
 					if (end_pids.has(pid2)) {
-						std::cout << "\t\tfound end pin: " << pid2 << std::endl;
+						//std::cout << "\t\tfound end pin: " << pid2 << std::endl;
 						return true;
 					}
 
 					if (visited_pids.has(pid2)) {
-						std::cout << "\t\tskipping pin: " << pid2 << std::endl;
+						//std::cout << "\t\tskipping pin: " << pid2 << std::endl;
 						continue;
 					}
 
-					std::cout << "\t\tvisiting pin: " << pid2 << std::endl;
+					//std::cout << "\t\tvisiting pin: " << pid2 << std::endl;
 					visited_pids.insert(pid2);
 					stack_pins.push_back(o_pin2.value());
 				}

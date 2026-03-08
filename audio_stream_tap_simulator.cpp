@@ -569,6 +569,7 @@ int AudioStreamTapSimulatorPlayback::mix(AudioFrame *p_buffer, float p_rate_scal
 void AudioStreamTapSimulatorPlayback::start(double p_from_pos) {
   current_time = 0.0;
 
+  //these conditions don't work for some reason.
   if (owner->can_simulate()) {
     for (auto kv : owner->trackers) {
       kv.value.event_count = 0;
