@@ -4,6 +4,8 @@
 
 #include "core/object/ref_counted.h"
 
+#include "core/variant/variant.h"
+#include "tap_circuit_types.h"
 #include "tap_network.h"
 #include "tap_patch_bay.h"
 
@@ -44,6 +46,13 @@ public:
 
 	tap_time_t get_latest_event_time() const;
 	size_t get_event_count() const;
+
+	/**
+	 * @brief Determine if any pids in the array are connected in the circuit.
+	 *
+	 * Used to control when execution of the circuit should happen.
+	 */
+	bool are_any_pids_connected(PackedInt64Array from, PackedInt64Array to) const;
 
 	/**
 	 * @brief Clear all elements of the patch bay and network in this simulator.

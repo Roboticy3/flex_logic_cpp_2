@@ -72,7 +72,7 @@ Vector2 ReferenceSim::measure_error(PackedVector2Array solution, PackedVector2Ar
   return Vector2(error.l, error.r);
 }
 
-AudioFrame ReferenceSim::measure_error_internal(const LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem, double delta_time) {
+AudioFrame ReferenceSim::measure_error_internal(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem, double delta_time) {
   AudioFrame error = reference_sim_func(solution, problem);
   error.l = error.l < 0 ? -error.l : error.l;
   error.r = error.r < 0 ? -error.r : error.r;
@@ -80,7 +80,7 @@ AudioFrame ReferenceSim::measure_error_internal(const LocalVector<AudioFrame> &s
   return error;
 }
 
-AudioFrame reference_mixer_no_peak(const LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
+AudioFrame reference_mixer_no_peak(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
 
   if (solution.is_empty()) {
     std::cout << "ReferenceSim: Solution is empty" << std::endl;
@@ -92,11 +92,24 @@ AudioFrame reference_mixer_no_peak(const LocalVector<AudioFrame> &solution, cons
     mix = mix + p;
   }
 
-  return mix - solution[0];
+  AudioFrame error = mix - solution[0];
+  solution[0] = mix;
+
+  return error;
+}
+
+AudioFrame reference_identity(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
+  AudioFrame error;
+  for (int i = 0; i < MIN(solution.size(), problem.size()); i++) {
+    error = error + (solution[i] - problem[i]);
+    solution[i] = AudioFrame();
+  }
+  return error;
 }
 
 void ReferenceSim::initialize_reference_registry_internal() {
   reference_registry["mixer_no_peak"] = reference_mixer_no_peak;
+  reference_registry["identity"] = reference_identity;
   print_line(vformat("ReferenceSim: Registered %d reference functions.", reference_registry.size()));
 }
 

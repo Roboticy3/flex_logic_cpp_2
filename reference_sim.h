@@ -5,7 +5,9 @@
 #include "core/math/audio_frame.h"
 #include "core/string/string_name.h"
 
-using ReferenceErrorFunc = AudioFrame(*)(const LocalVector<AudioFrame> &solution,const LocalVector<AudioFrame> &problem);
+//a reference function takes a solution and problem and returns an error,
+//writing the correct solution to the solution vector in the process
+using ReferenceErrorFunc = AudioFrame(*)(LocalVector<AudioFrame> &solution,const LocalVector<AudioFrame> &problem);
 
 /***
  * @brief Wrapper for a reference function to validate TapCircuit behavior.
@@ -63,7 +65,12 @@ class ReferenceSim : public Resource {
      *
      * Intended for when `delta_time` gets very small in audio threads.
      */
-    AudioFrame measure_error_internal(const LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem, double delta_time);
+    AudioFrame measure_error_internal(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem, double delta_time);
+
+    /**
+     * @brief Get the solution from the reference function.
+     */
+    LocalVector<AudioFrame> get_solution(const LocalVector<AudioFrame> &problem);
 
     static HashMap<StringName, ReferenceErrorFunc> reference_registry;
 };

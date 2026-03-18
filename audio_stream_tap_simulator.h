@@ -13,12 +13,19 @@
  * and sums output from output pids.
  *
  * @param input_streams A vector of AudioStreams mapped to circuit pids.
+ * @param force_loop If true, inputs are forced to loop externally by the child
+ * AudioStreamTapSimulatorPlayback.
+ *
  * @param debug_input_override If a stream is mapped to this label, pipe
  * directly to the output instead of through the circuit. Good for toggling.
+ * @param debug_reference_override If true, the reference sim will be used to
+ * generate audio instead of the circuit.
  * @param output_pids Pids that should be summed for the output
  *
  * @param circuit The TapCircuit to simulate.
  * @param reference_sim A function to test the current circuit against
+ * @param tolerance The maximum error that can exist in `owner->reference_sim`'s
+ * total before the circuit is considered an invalid solution.
  *
  * @param sample_skip Divides the number of samples passed to the circuit per 
  * second.
@@ -37,19 +44,33 @@ class AudioStreamTapSimulator : public AudioStream {
   };
 
   LocalVector<stream_pid_t> input_streams;
+  bool force_loop = true;
+
   tap_label_t debug_input_override = -1;
+  bool debug_reference_override = false;
   
   PackedInt64Array output_pids;
 
   Ref<TapCircuit> circuit;
   Ref<ReferenceSim> reference_sim;
+  float tolerance = 0.01f;
 
-  int sample_skip = 2;
+  int sample_skip = 4;
   int tick_rate = 1024;
 
+  /**
+   * @brief Internal state for tracking playback progress.
+   *
+   * @param playback The AudioStreamPlayback for the input stream.
+   * @param last_playback_position The last position in the input stream. Unused
+   * @param loop_count The number of forced loops.
+   * @param event_count The total events added to this pid.
+   */
   struct playback_tracker_t {
     Ref<AudioStreamPlayback> playback;
-    size_t event_count;
+    double last_playback_position = 0.0; //unused
+    int loop_count = 0; 
+    size_t event_count = 0;
   };
 
   HashMap<tap_label_t,playback_tracker_t> trackers;
@@ -61,25 +82,40 @@ protected:
 
 public:
   TypedDictionary<tap_label_t, Ref<AudioStream>> get_input_streams() const;
-  void set_input_streams(const TypedDictionary<tap_label_t, Ref<AudioStream>> &streams);
+  void set_input_streams(const TypedDictionary<tap_label_t, Ref<AudioStream>> &new_input_streams);
 
   tap_label_t get_debug_input_override() const;
-  void set_debug_input_override(tap_label_t label);
+  void set_debug_input_override(tap_label_t new_debug_input_override);
+
+  bool get_debug_reference_override() const;
+  void set_debug_reference_override(bool new_debug_reference_override);
 
   PackedInt64Array get_output_pids() const;
-  void set_output_pids(const PackedInt64Array &pids);
+  void set_output_pids(const PackedInt64Array &new_output_pids);
 
   Ref<TapCircuit> get_circuit() const;
-  void set_circuit(Ref<TapCircuit> circuit);
+  void set_circuit(Ref<TapCircuit> new_circuit);
 
   Ref<ReferenceSim> get_reference_sim() const;
-  void set_reference_sim(Ref<ReferenceSim> reference_sim);
+  void set_reference_sim(Ref<ReferenceSim> new_reference_sim);
+
+  float get_tolerance() const;
+  void set_tolerance(float new_tolerance);
 
   int get_sample_skip() const;
   void set_sample_skip(int sample_skip);
 
   int get_tick_rate() const;
   void set_tick_rate(int tick_rate);
+
+  int get_loop_count(tap_label_t pid) const;
+  Ref<AudioStreamPlayback> get_playback(tap_label_t pid) const;
+
+  /**
+   * @brief Returns true if the circuit is valid and the total reference error
+   * is less than `tolerance`.
+   */
+  bool is_circuit_correct() const;
 
   /**
    * @brief Returns true if all tracked playbacks are playing.
@@ -107,6 +143,7 @@ public:
  * @param mix_buffer A temporary buffer for audio.
  *
  * @param owner The AudioStreamTapSimulator that owns this playback.
+ *
  * @param current_time The current time in the circuit.
  *
  * @param debug_input_pids Pids that can be piped directly to the output
@@ -116,6 +153,7 @@ public:
  * Used to validate circuit behavior against `owner->reference_sim`.
  * @param solution `mix_out`'s output pids state after each circuit execution.
  * Used to validate circuit behavior against `owner->reference_sim`.
+ *
  * @param mix_rate The sample rate of the audio being mixed. Used to compute
  * delta time when incrementing `owner->reference_sim`'s error.
  *
@@ -126,12 +164,13 @@ class AudioStreamTapSimulatorPlayback : public AudioStreamPlaybackResampled {
   friend class AudioStreamTapSimulator;
 
   enum {
-		MIX_BUFFER_SIZE = 128
+		MIX_BUFFER_SIZE = 128,
 	};
 
   AudioFrame mix_buffer[MIX_BUFFER_SIZE];
 
   AudioStreamTapSimulator *owner = nullptr;
+
   tap_time_t current_time = 0;
   size_t processed_events_count = 0;
 
@@ -139,7 +178,9 @@ class AudioStreamTapSimulatorPlayback : public AudioStreamPlaybackResampled {
 
   LocalVector<AudioFrame> problem;
   LocalVector<AudioFrame> solution;
+
   double mix_rate = 44100.0;
+  bool playing = false;
 
 protected:
   static void _bind_methods();
@@ -170,6 +211,15 @@ public:
    * Prints the average level for each channel to std::cout.
    */
   int mix_stats(AudioFrame *p_buffer, float p_rate_scale, int p_frames);
+
+  /**
+   * @brief Update `input_playback_positions` with the current playback 
+   * positions of each input stream.
+   *
+   * If any playback positions are before the matching stored playback, count
+   * a loop and reset the reference error.
+   */
+  void mix_force_loop();
 
 	/**
    * @brief Schedule and call all the other mix methods.
