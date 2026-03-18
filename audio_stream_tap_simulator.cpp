@@ -515,28 +515,22 @@ int AudioStreamTapSimulatorPlayback::mix_out(AudioFrame *p_buffer, float p_rate_
   auto patch_bay = owner->circuit->get_patch_bay();
 
   for (int i = 0; i < p_frames; i++) {
-
-    //fill the problem buffer
-    for (size_t j = 0; j < MIN(owner->input_streams.size(), problem.size()); j++) {
-      problem[j] = patch_bay->get_pin_state(owner->input_streams[j].pid);
-    }
-
     //compute the solution
     if (i % owner->sample_skip == 0) {
+      for (size_t j = 0; j < MIN(owner->input_streams.size(), problem.size()); j++) {
+        problem[j] = patch_bay->get_pin_state(owner->input_streams[j].pid);
+      }
       processed_events_count += owner->circuit->process_to(current_time + (i * p_rate_scale) * owner->tick_rate);
-    }
+    
+      //fill the solution buffer
+      for (int j = 0; j < MIN(owner->output_pids.size(), solution.size()); j++) {
+        solution[j] = patch_bay->get_pin_state_internal(owner->output_pids[j]);
+      }
 
-    //zero out the buffer before summing to avoid noise from previous frames
-    p_buffer[i] = AudioFrame(0, 0);
-
-    //fill the solution buffer
-    for (int j = 0; j < MIN(owner->output_pids.size(), solution.size()); j++) {
-      solution[j] = patch_bay->get_pin_state_internal(owner->output_pids[j]);
-    }
-
-    //compute the problem/solution error
-    if (measure_error && i % owner->sample_skip == 0) {
-      owner->reference_sim->measure_error_internal(solution, problem, 1.0 / (mix_rate * (double)p_rate_scale));
+      //compute the problem/solution error
+      if (measure_error && i % owner->sample_skip == 0) {
+        owner->reference_sim->measure_error_internal(solution, problem, 1.0 / (mix_rate * (double)p_rate_scale));
+      }
     }
 
     //fill the audio buffer
