@@ -17,6 +17,10 @@ void AudioStreamTapSimulator::_bind_methods() {
   ClassDB::bind_method(D_METHOD("set_debug_input_override", "label"), &AudioStreamTapSimulator::set_debug_input_override);
   ADD_PROPERTY(PropertyInfo(Variant::INT, "debug_input_override", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_debug_input_override", "get_debug_input_override");
 
+  ClassDB::bind_method(D_METHOD("get_debug_reference_override"), &AudioStreamTapSimulator::get_debug_reference_override);
+  ClassDB::bind_method(D_METHOD("set_debug_reference_override", "enabled"), &AudioStreamTapSimulator::set_debug_reference_override);
+  ADD_PROPERTY(PropertyInfo(Variant::BOOL, "debug_reference_override", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_debug_reference_override", "get_debug_reference_override");
+
   ClassDB::bind_method(D_METHOD("get_output_pids"), &AudioStreamTapSimulator::get_output_pids);
   ClassDB::bind_method(D_METHOD("set_output_pids", "pids"), &AudioStreamTapSimulator::set_output_pids);
   ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "output_pids", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), "set_output_pids", "get_output_pids");
@@ -113,6 +117,32 @@ tap_label_t AudioStreamTapSimulator::get_debug_input_override() const {
   }
 
   return debug_input_override_copy;
+}
+
+bool AudioStreamTapSimulator::get_debug_reference_override() const {
+  if (circuit.is_valid()) {
+    circuit->get_mutex().lock();
+  }
+
+  bool debug_reference_override_copy = debug_reference_override;
+
+  if (circuit.is_valid()) {
+    circuit->get_mutex().unlock();
+  }
+
+  return debug_reference_override_copy;
+}
+
+void AudioStreamTapSimulator::set_debug_reference_override(bool new_debug_reference_override) {
+  if (circuit.is_valid()) {
+    circuit->get_mutex().lock();
+  }
+  
+  debug_reference_override = new_debug_reference_override;
+  
+  if (circuit.is_valid()) {
+    circuit->get_mutex().unlock();
+  }
 }
 
 void AudioStreamTapSimulator::set_output_pids(const PackedInt64Array &new_output_pids) {
@@ -480,7 +510,8 @@ int AudioStreamTapSimulatorPlayback::mix_out(AudioFrame *p_buffer, float p_rate_
     return p_frames;
   }
 
-  bool use_reference = owner->reference_sim.is_valid();
+  bool measure_error = owner->reference_sim.is_valid();
+  bool use_debug_reference_override = owner->debug_reference_override;
   auto patch_bay = owner->circuit->get_patch_bay();
 
   for (int i = 0; i < p_frames; i++) {
@@ -504,14 +535,14 @@ int AudioStreamTapSimulatorPlayback::mix_out(AudioFrame *p_buffer, float p_rate_
     }
 
     //compute the problem/solution error
-    if (use_reference && i % owner->sample_skip == 0) {
+    if (measure_error && i % owner->sample_skip == 0) {
       owner->reference_sim->measure_error_internal(solution, problem, 1.0 / (mix_rate * (double)p_rate_scale));
     }
 
     //fill the audio buffer
     for (size_t j = 0; j < solution.size(); j++) {
       //this line is still kind of ugly. Make sure to undo the references inside tapsim before merging fix-#19
-      p_buffer[i] += solution[j];
+      p_buffer[i] += use_debug_reference_override ? solution[j] : patch_bay->get_pin_state_internal(owner->output_pids[j]);
     }
   }
   return p_frames;

@@ -18,6 +18,8 @@
  *
  * @param debug_input_override If a stream is mapped to this label, pipe
  * directly to the output instead of through the circuit. Good for toggling.
+ * @param debug_reference_override If true, the reference sim will be used to
+ * generate audio instead of the circuit.
  * @param output_pids Pids that should be summed for the output
  *
  * @param circuit The TapCircuit to simulate.
@@ -45,6 +47,7 @@ class AudioStreamTapSimulator : public AudioStream {
   bool force_loop = true;
 
   tap_label_t debug_input_override = -1;
+  bool debug_reference_override = false;
   
   PackedInt64Array output_pids;
 
@@ -83,6 +86,9 @@ public:
 
   tap_label_t get_debug_input_override() const;
   void set_debug_input_override(tap_label_t new_debug_input_override);
+
+  bool get_debug_reference_override() const;
+  void set_debug_reference_override(bool new_debug_reference_override);
 
   PackedInt64Array get_output_pids() const;
   void set_output_pids(const PackedInt64Array &new_output_pids);
