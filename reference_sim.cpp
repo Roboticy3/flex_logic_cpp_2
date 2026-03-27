@@ -54,6 +54,7 @@ Vector2 ReferenceSim::get_total_error() const {
 }
 
 void ReferenceSim::reset() {
+  //std::cout << "ReferenceSim::reset" << std::endl;
   total_error = AudioFrame(0, 0);
 }
 
@@ -83,7 +84,10 @@ AudioFrame ReferenceSim::measure_error_internal(LocalVector<AudioFrame> &solutio
 AudioFrame reference_mixer_no_peak(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
 
   if (solution.is_empty()) {
-    std::cout << "ReferenceSim: Solution is empty" << std::endl;
+    return AudioFrame(Math::INF, Math::INF);
+  }
+
+  if (problem.size() < 2) {
     return AudioFrame(Math::INF, Math::INF);
   }
 
@@ -91,18 +95,24 @@ AudioFrame reference_mixer_no_peak(LocalVector<AudioFrame> &solution, const Loca
   for (AudioFrame p : problem) {
     mix = mix + p;
   }
-
   AudioFrame error = mix - solution[0];
   solution[0] = mix;
+
+  for (size_t i = 1; i < solution.size(); i++) {
+    error = error + solution[i];
+    solution[i] = AudioFrame();
+  }
+
+  //std::cout << "reference_mixer_no_peak: problem[0]=(" << problem[0].l << "," << problem[0].r << ") problem[1]=(" << problem[1].l << "," << problem[1].r << ") problem[2]=(" << problem[2].l << "," << problem[2].r << ") mix=(" << mix.l << "," << mix.r << ")" << std::endl;
 
   return error;
 }
 
 AudioFrame reference_identity(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
   AudioFrame error;
-  for (int i = 0; i < MIN(solution.size(), problem.size()); i++) {
+  for (size_t i = 0; i < MIN(solution.size(), problem.size()); i++) {
     error = error + (solution[i] - problem[i]);
-    solution[i] = AudioFrame();
+    solution[i] = problem[i];
   }
   return error;
 }
