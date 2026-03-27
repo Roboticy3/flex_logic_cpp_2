@@ -529,6 +529,8 @@ int AudioStreamTapSimulatorPlayback::mix_out(AudioFrame *p_buffer, float p_rate_
 
       //compute the problem/solution error
       if (measure_error && i % owner->sample_skip == 0) {
+        //std::cout << "problem size " << problem.size() << " solution size " << solution.size() << std::endl;
+        //std::cout << "plevels: " << problem[0].l << ", " << problem[1].l << "; err: " << solution[0].l - (problem[0].l + problem[1].l) << std::endl;
         owner->reference_sim->measure_error_internal(solution, problem, 1.0 / (mix_rate * (double)p_rate_scale));
       }
     }

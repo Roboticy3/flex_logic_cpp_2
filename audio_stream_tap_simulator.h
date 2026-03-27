@@ -55,7 +55,7 @@ class AudioStreamTapSimulator : public AudioStream {
   Ref<ReferenceSim> reference_sim;
   float tolerance = 0.01f;
 
-  int sample_skip = 4;
+  int sample_skip = 2;
   int tick_rate = 1024;
 
   /**
