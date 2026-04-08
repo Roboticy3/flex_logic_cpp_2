@@ -151,7 +151,7 @@ void mixer_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, t
 
 	//print_line("mixed result ", Vector2(result.l, result.r), " from ", Vector2(frame0.l, frame0.r), " and ", Vector2(frame1.l, frame1.r), " with carry ", carry.left, ", ", carry.right);
 
-	tap_time_t new_time = current_time + 3;
+	tap_time_t new_time = current_time + 2;
 
 	// Push result to queue with a dummy time and pin ID
 	queue.insert({ new_time, result, pins[2]->pid, cid }, new_time);
@@ -171,12 +171,25 @@ void gate_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, ta
 	queue.insert({ new_time, result, pins[2]->pid, cid }, new_time);
 }
 
+void inverter_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
+	//invert the input
+
+	AudioFrame frame = pins[0]->state;
+
+	AudioFrame result = frame * -1;
+
+	tap_time_t new_time = current_time + 3;
+
+	queue.insert({ new_time, result, pins[1]->pid, cid }, new_time);
+}
+
 void TapComponentType::initialize_solver_registry_internal() {
 	solver_registry.clear();
 	solver_registry.insert("wire", &wire_solver);
 	solver_registry.insert("none", &none_solver);
 	solver_registry.insert("mixer", &mixer_solver);
 	solver_registry.insert("gate", &gate_solver);
+	solver_registry.insert("inverter", &inverter_solver);
 	print_line(vformat("TapComponentType: Registered %d solver functions.", TapComponentType::solver_registry.size()));
 }
 
