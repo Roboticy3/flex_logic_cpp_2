@@ -152,7 +152,7 @@ void TapPatchBay::attach_pins_internal(const tap_component_t &component, tap_lab
 static void detach_pin_single(tap_label_t label, Labeling<tap_pin_t> &pins, tap_label_t component_id) {
 	auto p_pin = pins.label_get_mut(label);
 	if (!p_pin) {
-		WARN_PRINT("Attempted to detach nonexistant pin " + itos(label));
+		print_error("Attempted to detach nonexistant pin " + itos(label));
 		return;
 	}
 
@@ -160,7 +160,7 @@ static void detach_pin_single(tap_label_t label, Labeling<tap_pin_t> &pins, tap_
 	if (found != -1) {
 		p_pin->components.remove_at(found);
 	} else {
-		WARN_PRINT("Pin " + itos(label) + " not attached to component " + itos(component_id));
+		print_error("Pin " + itos(label) + " not attached to component " + itos(component_id));
 	}
 }
 
@@ -199,7 +199,7 @@ Vector2 TapPatchBay::get_pin_state(tap_label_t label) const {
 
 AudioFrame TapPatchBay::get_pin_state_internal(tap_label_t label) const {
 	if (!pins.label_get(label)) {
-		print_error("Attempted to get state of nonexistant pin " + itos(label));
+		print_error("Attempted to get internal state of nonexistant pin " + itos(label));
 		return AudioFrame(get_state_missing().x, get_state_missing().y);
 	}
 
@@ -232,6 +232,16 @@ void TapPatchBay::clear_pins() {
 	queue.reset();
 	pins.clear();
 	pin_states.clear();
+}
+
+void TapPatchBay::reset_pin_states() {
+	for (int i = 0; i < pin_states.size(); i++) {
+		tap_event_t *event = &(pin_states.ptrw()[i]);
+		event->time = 0;
+		event->state = AudioFrame(0.0f, 0.0f);
+		event->pid = i;
+		event->source_cid = -1;
+	}
 }
 
 TypedDictionary<tap_label_t, PackedInt64Array> TapPatchBay::get_all_pin_connections() const {

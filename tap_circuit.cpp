@@ -269,5 +269,13 @@ bool TapCircuit::is_instantiated() const {
 	return instantiated;
 }
 
+void TapCircuit::reset_live_states() {
+	std::lock_guard<std::recursive_mutex> lock(mutex);
+	patch_bay->reset_pin_states();
+	patch_bay->get_queue_internal().reset();
+	latest_event_time = 0;
+	std::cout << "Reset live states" << std::endl;
+}
+
 TapCircuit::TapCircuit() {
 }

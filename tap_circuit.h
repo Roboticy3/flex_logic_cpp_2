@@ -56,9 +56,6 @@ public:
 
 	/**
 	 * @brief Clear all elements of the patch bay and network in this simulator.
-	 *
-	 * Settings like `tick_rate` are not cleared. Component types are not
-	 * cleared.
 	 */
 	void clear();
 
@@ -128,6 +125,8 @@ public:
 	void instantiate();
 
 	bool is_instantiated() const;
+
+	void reset_live_states();
 
 	TapCircuit();
 };

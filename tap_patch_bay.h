@@ -92,6 +92,10 @@ public:
 	 * @brief Clear all pins and their states from the patch bay.
 	 */
 	void clear_pins();
+	/**
+	 * @brief Reset all pin states to their initial values.
+	 */
+	void reset_pin_states();
 
 	PackedInt64Array get_pin_connections(tap_label_t label) const;
 	TypedDictionary<tap_label_t, PackedInt64Array> get_all_pin_connections() const;

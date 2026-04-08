@@ -1,6 +1,7 @@
 #include "audio_stream_tap_simulator.h"
 #include "core/object/class_db.h"
 #include "core/object/object.h"
+#include "core/string/print_string.h"
 #include "core/variant/variant.h"
 #include "servers/audio/audio_stream.h"
 #include "tap_circuit_types.h"
@@ -475,7 +476,7 @@ int AudioStreamTapSimulatorPlayback::mix_in(float p_rate_scale, int p_frames) {
         int mixed = tracker.playback->mix(mix_buffer, p_rate_scale, to_mix);
         
         if (mixed < to_mix) {
-          std::cout << "AudioStreamPlayback " << tracker.playback.ptr() << " mixed " << (to_mix - mixed) << " under expected frame count!\n";
+          print_line("AudioStreamPlayback ", (uintptr_t)tracker.playback.ptr(), " (", owner->input_streams[label].stream->get_path(), ") mixed ", itos(to_mix - mixed), " under expected frame count!");
         }
         
         for (int j = 0; j < mixed; j += owner->sample_skip) {  
@@ -557,18 +558,27 @@ int AudioStreamTapSimulatorPlayback::mix_stats(AudioFrame *p_buffer, float p_rat
   return p_frames;
 }
 
-void AudioStreamTapSimulatorPlayback::mix_force_loop() {
+bool AudioStreamTapSimulatorPlayback::mix_force_loop() {
   if (!owner->force_loop) {
-    return;
+    return false;
   }
 
+  bool any_playback_stopped = false;
   for (auto &pair : owner->trackers) {
     Ref<AudioStreamPlayback> playback = pair.value.playback;
     if (playback.is_valid() && !playback->is_playing()) {
-      playback->start(0.0);
-      pair.value.loop_count++;
+      any_playback_stopped = true;
+      break;
     }
   }
+
+  if (any_playback_stopped) {
+    //reset all trackers to keep sync
+    stop();
+    start();
+  }
+  
+  return any_playback_stopped;
 }
 
 int AudioStreamTapSimulatorPlayback::mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
@@ -607,6 +617,8 @@ void AudioStreamTapSimulatorPlayback::start(double p_from_pos) {
       kv.value.event_count = 0;
       kv.value.playback->start(p_from_pos);
     }
+    processed_events_count = 0;
+    owner->circuit->reset_live_states();
   } else {
     stop();
   }
@@ -618,7 +630,12 @@ void AudioStreamTapSimulatorPlayback::stop() {
   if (owner->is_simulating()) {
     for (auto kv : owner->trackers) {
       kv.value.playback->stop();
+      kv.value.event_count = 0;
     }
+
+    processed_events_count = 0;
+
+    owner->circuit->reset_live_states();
   }
 }
 

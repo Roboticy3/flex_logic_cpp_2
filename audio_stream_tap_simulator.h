@@ -219,7 +219,7 @@ public:
    * If any playback positions are before the matching stored playback, count
    * a loop and reset the reference error.
    */
-  void mix_force_loop();
+  bool mix_force_loop();
 
 	/**
    * @brief Schedule and call all the other mix methods.
