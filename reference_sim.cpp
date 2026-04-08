@@ -77,6 +77,14 @@ AudioFrame ReferenceSim::measure_error_internal(LocalVector<AudioFrame> &solutio
   AudioFrame error = reference_sim_func(solution, problem);
   error.l = error.l < 0 ? -error.l : error.l;
   error.r = error.r < 0 ? -error.r : error.r;
+
+  constexpr float EPSILON = 1e-6f;
+  if (error.l < EPSILON) {
+    error.l = 0.0f;
+  }
+  if (error.r < EPSILON) {
+    error.r = 0.0f;
+  }
   total_error += AudioFrame(error.l * delta_time, error.r * delta_time);
   return error;
 }
@@ -117,9 +125,16 @@ AudioFrame reference_identity(LocalVector<AudioFrame> &solution, const LocalVect
   return error;
 }
 
+//inverter level
+AudioFrame reference_1(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
+  AudioFrame error = solution[0] - (problem[0] - problem[1] + problem[2]);
+  return error;
+}
+
 void ReferenceSim::initialize_reference_registry_internal() {
   reference_registry["mixer_no_peak"] = reference_mixer_no_peak;
   reference_registry["identity"] = reference_identity;
+  reference_registry["1"] = reference_1;
   print_line(vformat("ReferenceSim: Registered %d reference functions.", reference_registry.size()));
 }
 
