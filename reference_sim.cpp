@@ -127,7 +127,7 @@ AudioFrame reference_identity(LocalVector<AudioFrame> &solution, const LocalVect
 
 //inverter level
 AudioFrame reference_1(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
-  AudioFrame error = solution[0] - (problem[0] - problem[1] + problem[2]);
+  AudioFrame error = solution[0] - (problem[1] - problem[0] + problem[2]);
   return error;
 }
 
