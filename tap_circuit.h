@@ -129,5 +129,7 @@ public:
 
 	bool is_instantiated() const;
 
+	void reset_pin_states();
+
 	TapCircuit();
 };

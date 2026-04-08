@@ -607,6 +607,8 @@ void AudioStreamTapSimulatorPlayback::start(double p_from_pos) {
       kv.value.event_count = 0;
       kv.value.playback->start(p_from_pos);
     }
+    processed_events_count = 0;
+    owner->circuit->reset_pin_states();
   } else {
     stop();
   }
@@ -618,7 +620,12 @@ void AudioStreamTapSimulatorPlayback::stop() {
   if (owner->is_simulating()) {
     for (auto kv : owner->trackers) {
       kv.value.playback->stop();
+      kv.value.event_count = 0;
     }
+
+    processed_events_count = 0;
+
+    owner->circuit->reset_pin_states();
   }
 }
 

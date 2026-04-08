@@ -234,6 +234,16 @@ void TapPatchBay::clear_pins() {
 	pin_states.clear();
 }
 
+void TapPatchBay::reset_pin_states() {
+	for (int i = 0; i < pin_states.size(); i++) {
+		tap_event_t *event = &(pin_states.ptrw()[i]);
+		event->time = 0;
+		event->state = AudioFrame(0.0f, 0.0f);
+		event->pid = i;
+		event->source_cid = -1;
+	}
+}
+
 TypedDictionary<tap_label_t, PackedInt64Array> TapPatchBay::get_all_pin_connections() const {
 	TypedDictionary<tap_label_t, PackedInt64Array> dict;
 	for (int i = 0; i < pins.size(); i++) {
