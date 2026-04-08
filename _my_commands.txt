@@ -23,5 +23,8 @@ quick (faster compile):
   mkdir ./cache/quick
   scons dev_build=no compiledb=True cache_path=.cache/quick cache_limit=2
 
+export profile:
+  scons dev_build=no compiledb=True cache_path=.cache/export cache_limit=2 target=template_debug
+
 run quick compiled project:
-  .\bin\godot.windows.editor.x86_64.exe ..\..\moon-science\project.godot
+  .\bin\godot.windows.editor.x86_64.console.exe ..\..\moon-science\project.godot
