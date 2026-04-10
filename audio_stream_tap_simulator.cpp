@@ -52,6 +52,7 @@ void AudioStreamTapSimulator::_bind_methods() {
   ClassDB::bind_method(D_METHOD("can_simulate"), &AudioStreamTapSimulator::can_simulate);
   ClassDB::bind_method(D_METHOD("is_simulating"), &AudioStreamTapSimulator::is_simulating);
   ClassDB::bind_method(D_METHOD("is_circuit_correct"), &AudioStreamTapSimulator::is_circuit_correct);
+  ClassDB::bind_method(D_METHOD("top"), &AudioStreamTapSimulator::top);
 
   ClassDB::bind_method(D_METHOD("get_playback", "pid"), &AudioStreamTapSimulator::get_playback);
   ClassDB::bind_method(D_METHOD("get_event_counts"), &AudioStreamTapSimulator::get_event_counts);
@@ -276,6 +277,11 @@ bool AudioStreamTapSimulator::is_circuit_correct() {
   return frame->get_success();
 }
 
+Ref<ReferenceFrame> AudioStreamTapSimulator::top() {
+  return reference_frame_stack.top();
+}
+
+
 bool AudioStreamTapSimulator::is_simulating() const {
   if (circuit.is_valid()) {
     circuit->get_mutex().lock();
@@ -462,10 +468,6 @@ int AudioStreamTapSimulatorPlayback::mix_in(float p_rate_scale, int p_frames) {
 
         int mixed = tracker.playback->mix(mix_buffer, p_rate_scale, to_mix);
         
-        if (mixed < to_mix) {
-          print_line("AudioStreamPlayback ", (uintptr_t)tracker.playback.ptr(), " (", owner->input_streams[label].stream->get_path(), ") mixed ", itos(to_mix - mixed), " under expected frame count!");
-        }
-        
         for (int j = 0; j < mixed; j += owner->sample_skip) {  
           //input circuit events here.
           tap_time_t time = rolling_time + (j * p_rate_scale) * owner->tick_rate;
@@ -565,6 +567,7 @@ bool AudioStreamTapSimulatorPlayback::mix_force_loop() {
     frame->set_tolerance(owner->tolerance);
     frame->set_total_error(AudioFrame(0.0f, 0.0f));
     owner->reference_frame_stack.push(frame);
+    print_line("Reference frame pushed!");
     
     //reset all trackers to keep sync
     stop();
@@ -610,8 +613,8 @@ void AudioStreamTapSimulatorPlayback::start(double p_from_pos) {
       kv.value.event_count = 0;
       kv.value.playback->start(p_from_pos);
     }
-    processed_events_count = 0;
     owner->circuit->reset_live_states();
+    processed_events_count = 0;
   } else {
     stop();
   }
@@ -625,10 +628,8 @@ void AudioStreamTapSimulatorPlayback::stop() {
       kv.value.playback->stop();
       kv.value.event_count = 0;
     }
-
-    processed_events_count = 0;
-
     owner->circuit->reset_live_states();
+    processed_events_count = 0;
   }
 }
 

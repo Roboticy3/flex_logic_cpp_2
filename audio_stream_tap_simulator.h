@@ -54,7 +54,7 @@ class AudioStreamTapSimulator : public AudioStream {
 
   Ref<TapCircuit> circuit;
   Ref<ReferenceSim> reference_sim;
-  ReferenceFrameStack reference_frame_stack;
+  ReferenceFrameContainer reference_frame_stack;
   float tolerance = 0.01f;
 
   int sample_skip = 2;
@@ -118,6 +118,7 @@ public:
    * is less than `tolerance`.
    */
   bool is_circuit_correct();
+  Ref<ReferenceFrame> top();
 
   /**
    * @brief Returns true if all tracked playbacks are playing.

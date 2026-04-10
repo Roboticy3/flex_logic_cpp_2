@@ -1,10 +1,8 @@
 #pragma once
 
 #include "core/object/ref_counted.h"
-#include "core/templates/ring_buffer.h"
 #include "core/math/audio_frame.h"
-#include "core/string/print_string.h"
-#include "core/templates/vector.h"
+#include "core/templates/local_vector.h"
 #include <mutex>
 
 class ReferenceFrame : public RefCounted {
@@ -27,62 +25,39 @@ public:
   }
   float get_tolerance() const { return tolerance; }
 
-  void set_total_error(AudioFrame p_total_error) { 
-    total_error = p_total_error; 
+  void set_total_error(Vector2 p_total_error) { 
+    total_error = AudioFrame(p_total_error.x, p_total_error.y); 
     success = total_error.r + total_error.l <= tolerance;
   }
-  AudioFrame get_total_error() const { return total_error; }
+  Vector2 get_total_error() const { return Vector2(total_error.l, total_error.r); }
 
 protected:
   static void _bind_methods();
 };
 
-class ReferenceFrameStack {
-  RingBuffer<Ref<ReferenceFrame>> frames;
+class ReferenceFrameContainer {
+  LocalVector<Ref<ReferenceFrame>> frames;
   std::recursive_mutex mutex;
 
 public:
-  ReferenceFrameStack() {
-    frames.resize(10);
-  }
-
   void push(const Ref<ReferenceFrame>& frame) { 
     std::lock_guard<std::recursive_mutex> lock(mutex); 
-    frames.write(frame); 
+    frames.push_back(frame); 
   }
   void pop() { 
     std::lock_guard<std::recursive_mutex> lock(mutex); 
-    frames.read(); 
-  }
-  void resize(int p_power) { 
-    std::lock_guard<std::recursive_mutex> lock(mutex); 
-    frames.resize(p_power); 
+    frames.remove_at(frames.size() - 1); 
   }
   Ref<ReferenceFrame> top() { 
     std::lock_guard<std::recursive_mutex> lock(mutex); 
-    
-    // Debug: Print ring buffer contents
-    print_line("=== ReferenceFrameStack Debug ===");
-    print_line("Ring buffer size: " + itos(frames.size()));
-    print_line("Data left: " + itos(frames.data_left()));
-    
-    // Create a temporary buffer to copy ring buffer contents
-    Vector<Ref<ReferenceFrame>> temp_buffer;
-    temp_buffer.resize(frames.data_left());
-    int copied = frames.copy(temp_buffer.ptrw(), 0, frames.data_left());
-    
-    for (int i = 0; i < copied; i++) {
-      Ref<ReferenceFrame> frame = temp_buffer[i];
-      if (frame.is_valid()) {
-        AudioFrame error = frame->get_total_error();
-        print_line("Frame " + itos(i) + ": success=" + (frame->get_success() ? "true" : "false") + 
-                  ", error=(" + rtos(error.l) + ", " + rtos(error.r) + ")");
-      } else {
-        print_line("Frame " + itos(i) + ": null");
-      }
+    if (frames.size() == 0) {
+      return Ref<ReferenceFrame>();
     }
-    print_line("================================");
-    
-    return frames.read(); 
+    return frames[frames.size() - 1]; 
+  }
+
+  void clear() { 
+    std::lock_guard<std::recursive_mutex> lock(mutex); 
+    frames.clear(); 
   }
 };
