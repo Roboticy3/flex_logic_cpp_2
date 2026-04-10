@@ -268,25 +268,12 @@ void AudioStreamTapSimulator::set_sample_skip(int new_sample_skip) {
   }
 }
 
-bool AudioStreamTapSimulator::is_circuit_correct() const {
-  if (circuit.is_valid()) {
-    circuit->get_mutex().lock();
-  } else {
+bool AudioStreamTapSimulator::is_circuit_correct() {
+  auto frame = reference_frame_stack.top();
+  if (frame.is_null()) {
     return false;
   }
-
-  if (reference_sim.is_null()) {
-    return false;
-  }
-  
-  AudioFrame error = reference_sim->get_total_error();
-  bool is_correct = error.l < tolerance && error.r < tolerance;
-  
-  if (circuit.is_valid()) {
-    circuit->get_mutex().unlock();
-  }
-  
-  return is_correct;
+  return frame->get_success();
 }
 
 bool AudioStreamTapSimulator::is_simulating() const {
@@ -573,6 +560,12 @@ bool AudioStreamTapSimulatorPlayback::mix_force_loop() {
   }
 
   if (any_playback_stopped) {
+    Ref<ReferenceFrame> frame;
+    frame.instantiate();
+    frame->set_tolerance(owner->tolerance);
+    frame->set_total_error(AudioFrame(0.0f, 0.0f));
+    owner->reference_frame_stack.push(frame);
+    
     //reset all trackers to keep sync
     stop();
     start();
