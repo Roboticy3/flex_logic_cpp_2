@@ -281,6 +281,12 @@ Ref<ReferenceFrame> AudioStreamTapSimulator::top() {
   return reference_frame_stack.top();
 }
 
+void AudioStreamTapSimulator::_stash_error() {
+  Ref<ReferenceFrame> frame;
+  frame.instantiate(reference_sim->get_total_error(), tolerance);
+  reference_frame_stack.push(frame);
+  reference_sim->reset();
+}
 
 bool AudioStreamTapSimulator::is_simulating() const {
   if (circuit.is_valid()) {
@@ -562,11 +568,7 @@ bool AudioStreamTapSimulatorPlayback::mix_force_loop() {
   }
 
   if (any_playback_stopped) {
-    Ref<ReferenceFrame> frame;
-    frame.instantiate();
-    frame->set_tolerance(owner->tolerance);
-    frame->set_total_error(AudioFrame(0.0f, 0.0f));
-    owner->reference_frame_stack.push(frame);
+    owner->_stash_error();
     print_line("Reference frame pushed!");
     
     //reset all trackers to keep sync

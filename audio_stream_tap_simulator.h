@@ -79,6 +79,8 @@ class AudioStreamTapSimulator : public AudioStream {
 
   bool calculate_stats = true;
 
+  void _stash_error();
+
 protected:
   static void _bind_methods();
 
