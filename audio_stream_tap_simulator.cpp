@@ -52,6 +52,7 @@ void AudioStreamTapSimulator::_bind_methods() {
   ClassDB::bind_method(D_METHOD("can_simulate"), &AudioStreamTapSimulator::can_simulate);
   ClassDB::bind_method(D_METHOD("is_simulating"), &AudioStreamTapSimulator::is_simulating);
   ClassDB::bind_method(D_METHOD("is_circuit_correct"), &AudioStreamTapSimulator::is_circuit_correct);
+  ClassDB::bind_method(D_METHOD("top"), &AudioStreamTapSimulator::top);
 
   ClassDB::bind_method(D_METHOD("get_playback", "pid"), &AudioStreamTapSimulator::get_playback);
   ClassDB::bind_method(D_METHOD("get_event_counts"), &AudioStreamTapSimulator::get_event_counts);
@@ -268,25 +269,23 @@ void AudioStreamTapSimulator::set_sample_skip(int new_sample_skip) {
   }
 }
 
-bool AudioStreamTapSimulator::is_circuit_correct() const {
-  if (circuit.is_valid()) {
-    circuit->get_mutex().lock();
-  } else {
+bool AudioStreamTapSimulator::is_circuit_correct() {
+  auto frame = reference_frame_stack.top();
+  if (frame.is_null()) {
     return false;
   }
+  return frame->get_success();
+}
 
-  if (reference_sim.is_null()) {
-    return false;
-  }
-  
-  AudioFrame error = reference_sim->get_total_error();
-  bool is_correct = error.l < tolerance && error.r < tolerance;
-  
-  if (circuit.is_valid()) {
-    circuit->get_mutex().unlock();
-  }
-  
-  return is_correct;
+Ref<ReferenceFrame> AudioStreamTapSimulator::top() {
+  return reference_frame_stack.top();
+}
+
+void AudioStreamTapSimulator::_stash_error() {
+  Ref<ReferenceFrame> frame;
+  frame.instantiate(reference_sim->get_total_error(), tolerance);
+  reference_frame_stack.push(frame);
+  reference_sim->reset();
 }
 
 bool AudioStreamTapSimulator::is_simulating() const {
@@ -475,10 +474,6 @@ int AudioStreamTapSimulatorPlayback::mix_in(float p_rate_scale, int p_frames) {
 
         int mixed = tracker.playback->mix(mix_buffer, p_rate_scale, to_mix);
         
-        if (mixed < to_mix) {
-          print_line("AudioStreamPlayback ", (uintptr_t)tracker.playback.ptr(), " (", owner->input_streams[label].stream->get_path(), ") mixed ", itos(to_mix - mixed), " under expected frame count!");
-        }
-        
         for (int j = 0; j < mixed; j += owner->sample_skip) {  
           //input circuit events here.
           tap_time_t time = rolling_time + (j * p_rate_scale) * owner->tick_rate;
@@ -573,6 +568,9 @@ bool AudioStreamTapSimulatorPlayback::mix_force_loop() {
   }
 
   if (any_playback_stopped) {
+    owner->_stash_error();
+    print_line("Reference frame pushed!");
+    
     //reset all trackers to keep sync
     stop();
     start();
@@ -617,8 +615,8 @@ void AudioStreamTapSimulatorPlayback::start(double p_from_pos) {
       kv.value.event_count = 0;
       kv.value.playback->start(p_from_pos);
     }
-    processed_events_count = 0;
     owner->circuit->reset_live_states();
+    processed_events_count = 0;
   } else {
     stop();
   }
@@ -632,10 +630,8 @@ void AudioStreamTapSimulatorPlayback::stop() {
       kv.value.playback->stop();
       kv.value.event_count = 0;
     }
-
-    processed_events_count = 0;
-
     owner->circuit->reset_live_states();
+    processed_events_count = 0;
   }
 }
 

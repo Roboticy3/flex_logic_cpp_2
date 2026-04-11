@@ -2,6 +2,7 @@
 
 #include "core/object/ref_counted.h"
 #include "core/variant/variant.h"
+#include "reference_frame.h"
 #include "servers/audio/audio_stream.h"
 
 #include "tap_circuit_types.h"
@@ -53,6 +54,7 @@ class AudioStreamTapSimulator : public AudioStream {
 
   Ref<TapCircuit> circuit;
   Ref<ReferenceSim> reference_sim;
+  ReferenceFrameContainer reference_frame_stack;
   float tolerance = 0.01f;
 
   int sample_skip = 2;
@@ -76,6 +78,8 @@ class AudioStreamTapSimulator : public AudioStream {
   HashMap<tap_label_t,playback_tracker_t> trackers;
 
   bool calculate_stats = true;
+
+  void _stash_error();
 
 protected:
   static void _bind_methods();
@@ -115,7 +119,8 @@ public:
    * @brief Returns true if the circuit is valid and the total reference error
    * is less than `tolerance`.
    */
-  bool is_circuit_correct() const;
+  bool is_circuit_correct();
+  Ref<ReferenceFrame> top();
 
   /**
    * @brief Returns true if all tracked playbacks are playing.
