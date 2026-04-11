@@ -1,13 +1,13 @@
 #pragma once
 
 #include "core/io/resource.h"
-#include "core/templates/local_vector.h"
-#include "core/math/audio_frame.h"
 #include "core/string/string_name.h"
+
+#include "tap_circuit_types.h"
 
 //a reference function takes a solution and problem and returns an error,
 //writing the correct solution to the solution vector in the process
-using ReferenceErrorFunc = AudioFrame(*)(LocalVector<AudioFrame> &solution,const LocalVector<AudioFrame> &problem);
+using ReferenceErrorFunc = tap_frame_t(*)(LocalVector<tap_frame_t> &solution,const LocalVector<tap_frame_t> &problem);
 
 /***
  * @brief Wrapper for a reference function to validate TapCircuit behavior.
@@ -23,7 +23,7 @@ class ReferenceSim : public Resource {
   GDCLASS(ReferenceSim, Resource)
 
   StringName reference_sim_name;
-  AudioFrame total_error;
+  tap_frame_t total_error;
   
   ReferenceErrorFunc reference_sim_func;
 
@@ -61,16 +61,16 @@ class ReferenceSim : public Resource {
     /**
      * @brief Internal version of `measure_error` with added complexity of
      * taking a `delta_time` parameter to scale the error, and returning a raw
-     * AudioFrame error instead of Vector2.
+     * tap_frame_t error instead of Vector2.
      *
      * Intended for when `delta_time` gets very small in audio threads.
      */
-    AudioFrame measure_error_internal(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem, double delta_time);
+    tap_frame_t measure_error_internal(LocalVector<tap_frame_t> &solution, const LocalVector<tap_frame_t> &problem, double delta_time);
 
     /**
      * @brief Get the solution from the reference function.
      */
-    LocalVector<AudioFrame> get_solution(const LocalVector<AudioFrame> &problem);
+    LocalVector<tap_frame_t> get_solution(const LocalVector<tap_frame_t> &problem);
 
     static HashMap<StringName, ReferenceErrorFunc> reference_registry;
 };

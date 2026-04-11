@@ -55,26 +55,26 @@ Vector2 ReferenceSim::get_total_error() const {
 
 void ReferenceSim::reset() {
   //std::cout << "ReferenceSim::reset" << std::endl;
-  total_error = AudioFrame(0, 0);
+  total_error = tap_frame_t(0, 0);
 }
 
 Vector2 ReferenceSim::measure_error(PackedVector2Array solution, PackedVector2Array problem) {
-  LocalVector<AudioFrame> solution_vec;
+  LocalVector<tap_frame_t> solution_vec;
   for (int i = 0; i < solution.size(); i++) {
-    solution_vec.push_back(AudioFrame(solution[i].x, solution[i].y));
+    solution_vec.push_back(tap_frame_t(solution[i].x, solution[i].y));
   }
   
-  LocalVector<AudioFrame> problem_vec;
+  LocalVector<tap_frame_t> problem_vec;
   for (int i = 0; i < problem.size(); i++) {
-    problem_vec.push_back(AudioFrame(problem[i].x, problem[i].y));
+    problem_vec.push_back(tap_frame_t(problem[i].x, problem[i].y));
   }
   
-  AudioFrame error = measure_error_internal(solution_vec, problem_vec, 1.0f);
+  tap_frame_t error = measure_error_internal(solution_vec, problem_vec, 1.0f);
   return Vector2(error.l, error.r);
 }
 
-AudioFrame ReferenceSim::measure_error_internal(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem, double delta_time) {
-  AudioFrame error = reference_sim_func(solution, problem);
+tap_frame_t ReferenceSim::measure_error_internal(LocalVector<tap_frame_t> &solution, const LocalVector<tap_frame_t> &problem, double delta_time) {
+  tap_frame_t error = reference_sim_func(solution, problem);
   error.l = error.l < 0 ? -error.l : error.l;
   error.r = error.r < 0 ? -error.r : error.r;
 
@@ -85,30 +85,30 @@ AudioFrame ReferenceSim::measure_error_internal(LocalVector<AudioFrame> &solutio
   if (error.r < EPSILON) {
     error.r = 0.0f;
   }
-  total_error += AudioFrame(error.l * delta_time, error.r * delta_time);
+  total_error += tap_frame_t(error.l * delta_time, error.r * delta_time);
   return error;
 }
 
-AudioFrame reference_mixer_no_peak(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
+static tap_frame_t reference_mixer_no_peak(LocalVector<tap_frame_t> &solution, const LocalVector<tap_frame_t> &problem) {
 
   if (solution.is_empty()) {
-    return AudioFrame(Math::INF, Math::INF);
+    return tap_frame_t(Math::INF, Math::INF);
   }
 
   if (problem.size() < 2) {
-    return AudioFrame(Math::INF, Math::INF);
+    return tap_frame_t(Math::INF, Math::INF);
   }
 
-  AudioFrame mix;
-  for (AudioFrame p : problem) {
+  tap_frame_t mix;
+  for (tap_frame_t p : problem) {
     mix = mix + p;
   }
-  AudioFrame error = mix - solution[0];
+  tap_frame_t error = mix - solution[0];
   solution[0] = mix;
 
   for (size_t i = 1; i < solution.size(); i++) {
     error = error + solution[i];
-    solution[i] = AudioFrame();
+    solution[i] = tap_frame_t();
   }
 
   //std::cout << "reference_mixer_no_peak: problem[0]=(" << problem[0].l << "," << problem[0].r << ") problem[1]=(" << problem[1].l << "," << problem[1].r << ") problem[2]=(" << problem[2].l << "," << problem[2].r << ") mix=(" << mix.l << "," << mix.r << ")" << std::endl;
@@ -116,8 +116,8 @@ AudioFrame reference_mixer_no_peak(LocalVector<AudioFrame> &solution, const Loca
   return error;
 }
 
-AudioFrame reference_identity(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
-  AudioFrame error;
+static tap_frame_t reference_identity(LocalVector<tap_frame_t> &solution, const LocalVector<tap_frame_t> &problem) {
+  tap_frame_t error;
   for (size_t i = 0; i < MIN(solution.size(), problem.size()); i++) {
     error = error + (solution[i] - problem[i]);
     solution[i] = problem[i];
@@ -126,8 +126,8 @@ AudioFrame reference_identity(LocalVector<AudioFrame> &solution, const LocalVect
 }
 
 //inverter level
-AudioFrame reference_1(LocalVector<AudioFrame> &solution, const LocalVector<AudioFrame> &problem) {
-  AudioFrame error = solution[0] - (problem[1] - problem[0] + problem[2]);
+static tap_frame_t reference_1(LocalVector<tap_frame_t> &solution, const LocalVector<tap_frame_t> &problem) {
+  tap_frame_t error = solution[0] - (problem[1] - problem[0] + problem[2]);
   return error;
 }
 

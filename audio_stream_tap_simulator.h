@@ -172,7 +172,7 @@ class AudioStreamTapSimulatorPlayback : public AudioStreamPlaybackResampled {
 		MIX_BUFFER_SIZE = 128,
 	};
 
-  AudioFrame mix_buffer[MIX_BUFFER_SIZE];
+  tap_frame_t mix_buffer[MIX_BUFFER_SIZE];
 
   AudioStreamTapSimulator *owner = nullptr;
 
@@ -181,8 +181,8 @@ class AudioStreamTapSimulatorPlayback : public AudioStreamPlaybackResampled {
 
   HashSet<tap_label_t> debug_input_pids;
 
-  LocalVector<AudioFrame> problem;
-  LocalVector<AudioFrame> solution;
+  LocalVector<tap_frame_t> problem;
+  LocalVector<tap_frame_t> solution;
 
   double mix_rate = 44100.0;
   bool playing = false;
@@ -197,7 +197,7 @@ public:
    * normal function, this should sound exactly like the input mapped to that
    * pid, or silence.
    */
-  int mix_debug(AudioFrame *p_buffer, float p_rate_scale, int p_frames);
+  int mix_debug(tap_frame_t *p_buffer, float p_rate_scale, int p_frames);
 
   /**
    * @brief Mix `owner->input_streams` into the circuit at their target pids.
@@ -208,14 +208,14 @@ public:
    * @brief Sum the states of `owner->output_pids` into `p_buffer` for each 
    * audio frame.
    */
-  int mix_out(AudioFrame *p_buffer, float p_rate_scale, int p_frames);
+  int mix_out(tap_frame_t *p_buffer, float p_rate_scale, int p_frames);
 
   /**
    * @brief Run statistics on mixed outputs if `owner->calculate_stats` is true.
    *
    * Prints the average level for each channel to std::cout.
    */
-  int mix_stats(AudioFrame *p_buffer, float p_rate_scale, int p_frames);
+  int mix_stats(tap_frame_t *p_buffer, float p_rate_scale, int p_frames);
 
   /**
    * @brief Update `input_playback_positions` with the current playback 
@@ -229,7 +229,7 @@ public:
 	/**
    * @brief Schedule and call all the other mix methods.
    */
-	virtual int mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) override;
+	virtual int mix(tap_frame_t *p_buffer, float p_rate_scale, int p_frames) override;
 
 	/**
    * @brief Start adding events at the latest event position of the simulator

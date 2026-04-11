@@ -414,10 +414,10 @@ PackedInt64Array AudioStreamTapSimulator::get_event_counts() const {
 
 void AudioStreamTapSimulatorPlayback::_bind_methods() {};
 
-int AudioStreamTapSimulatorPlayback::mix_debug(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
+int AudioStreamTapSimulatorPlayback::mix_debug(tap_frame_t *p_buffer, float p_rate_scale, int p_frames) {
   if (!debug_input_pids.has(owner->debug_input_override)) {
     for (int i = 0; i < p_frames; i++) {
-      p_buffer[i] = AudioFrame(0, 0);
+      p_buffer[i] = tap_frame_t(0, 0);
     }
     return p_frames;
   }
@@ -426,7 +426,7 @@ int AudioStreamTapSimulatorPlayback::mix_debug(AudioFrame *p_buffer, float p_rat
 
   if (!playback.is_valid()) {
     for (int i = 0; i < p_frames; i++) {
-      p_buffer[i] = AudioFrame(0, 0);
+      p_buffer[i] = tap_frame_t(0, 0);
     }
     return p_frames;
   }
@@ -435,7 +435,7 @@ int AudioStreamTapSimulatorPlayback::mix_debug(AudioFrame *p_buffer, float p_rat
   //It looks like the intent is to use the fixed-size buffer to manage the streams
   //in a way that doesn't require dynamic memory.
   int todo = p_frames;
-  AudioFrame *rolling_buffer = p_buffer;
+  tap_frame_t *rolling_buffer = p_buffer;
 
   while (todo) {
     int to_mix = MIN(todo, MIX_BUFFER_SIZE);
@@ -499,7 +499,7 @@ int AudioStreamTapSimulatorPlayback::mix_in(float p_rate_scale, int p_frames) {
 	return p_frames;
 }
 
-int AudioStreamTapSimulatorPlayback::mix_out(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
+int AudioStreamTapSimulatorPlayback::mix_out(tap_frame_t *p_buffer, float p_rate_scale, int p_frames) {
   //read out the simulator contents
 
   if (owner->output_pids.size() == 0) {
@@ -540,9 +540,9 @@ int AudioStreamTapSimulatorPlayback::mix_out(AudioFrame *p_buffer, float p_rate_
   return p_frames;
 }
 
-int AudioStreamTapSimulatorPlayback::mix_stats(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
+int AudioStreamTapSimulatorPlayback::mix_stats(tap_frame_t *p_buffer, float p_rate_scale, int p_frames) {
   
-  AudioFrame avg;
+  tap_frame_t avg;
 
   for (int i = 0; i < p_frames; i++) {
     avg += p_buffer[i];
@@ -579,7 +579,7 @@ bool AudioStreamTapSimulatorPlayback::mix_force_loop() {
   return any_playback_stopped;
 }
 
-int AudioStreamTapSimulatorPlayback::mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
+int AudioStreamTapSimulatorPlayback::mix(tap_frame_t *p_buffer, float p_rate_scale, int p_frames) {
   if (!playing ||!owner->circuit->get_mutex().try_lock()) {
     return 0;
   }

@@ -1,8 +1,7 @@
 #pragma once
 
 #include "core/object/ref_counted.h"
-#include "core/math/audio_frame.h"
-#include "core/templates/local_vector.h"
+#include "tap_circuit_types.h"
 #include <mutex>
 
 class ReferenceFrame : public RefCounted {
@@ -10,10 +9,10 @@ class ReferenceFrame : public RefCounted {
   
   bool success;
   float tolerance;
-  AudioFrame total_error;
+  tap_frame_t total_error;
 
 public:
-  ReferenceFrame(AudioFrame total_error = AudioFrame(0.0f, 0.0f), float tolerance = 0.01f) : tolerance(tolerance), total_error(total_error) {
+  ReferenceFrame(tap_frame_t total_error = tap_frame_t(0.0f, 0.0f), float tolerance = 0.01f) : tolerance(tolerance), total_error(total_error) {
     success = total_error.r + total_error.l <= tolerance;
   }
 
@@ -26,7 +25,7 @@ public:
   float get_tolerance() const { return tolerance; }
 
   void set_total_error(Vector2 p_total_error) { 
-    total_error = AudioFrame(p_total_error.x, p_total_error.y); 
+    total_error = tap_frame_t(p_total_error.x, p_total_error.y); 
     success = total_error.r + total_error.l <= tolerance;
   }
   Vector2 get_total_error() const { return Vector2(total_error.l, total_error.r); }
