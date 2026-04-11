@@ -107,7 +107,7 @@ public:
 	 * @param state The audio frame state
 	 * @param pid The process label ID
 	 */
-	void push_event(tap_time_t time, AudioFrame state, tap_label_t pid);
+	void push_event(tap_time_t time, tap_frame_t state, tap_label_t pid);
 
 	/**
 	 * @brief Mutex getter so Audio processes can make their own locks for batch 

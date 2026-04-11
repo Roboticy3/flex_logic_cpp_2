@@ -127,11 +127,11 @@ void none_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, ta
 
 void mixer_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
 	//add in float space to act more like a mixxer than a binary adder
-	AudioFrame frame0 = pins[0]->state;
-	AudioFrame frame1 = pins[1]->state;
+	tap_frame_t frame0 = pins[0]->state;
+	tap_frame_t frame1 = pins[1]->state;
 
-	AudioFrame result = frame0 + frame1;
-	AudioFrame carry(0.0f, 0.0f);
+	tap_frame_t result = frame0 + frame1;
+	tap_frame_t carry(0.0f, 0.0f);
 
 	if (result.left < -1.0f) {
 		carry.left = -1.0f;
@@ -161,10 +161,10 @@ void mixer_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, t
 void gate_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
 	//multiply two inputs
 
-	AudioFrame frame0 = pins[0]->state;
-	AudioFrame frame1 = pins[1]->state;
+	tap_frame_t frame0 = pins[0]->state;
+	tap_frame_t frame1 = pins[1]->state;
 
-	AudioFrame result = frame0 * frame1;
+	tap_frame_t result = frame0 * frame1;
 
 	tap_time_t new_time = current_time + 3;
 
@@ -174,9 +174,9 @@ void gate_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, ta
 void inverter_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid) {
 	//invert the input
 
-	AudioFrame frame = pins[0]->state;
+	tap_frame_t frame = pins[0]->state;
 
-	AudioFrame result = frame * -1;
+	tap_frame_t result = frame * -1;
 
 	tap_time_t new_time = current_time + 3;
 

@@ -1,6 +1,5 @@
 #include <optional>
 
-#include "core/math/audio_frame.h"
 #include "core/math/vector2.h"
 #include "core/object/class_db.h"
 #include "core/variant/dictionary.h"
@@ -35,7 +34,7 @@ void TapPatchBay::_bind_methods() {
 }
 
 void TapPatchBay::push_event(tap_time_t time, Vector2 state, tap_state_t pid) {
-	queue.insert({ time, AudioFrame(state.x, state.y), pid, COMPONENT_MISSING }, time);
+	queue.insert({ time, tap_frame_t(state.x, state.y), pid, COMPONENT_MISSING }, time);
 }
 
 int TapPatchBay::get_event_count() const {
@@ -49,7 +48,7 @@ Vector2 TapPatchBay::pop_next_state() {
 
 	auto event = queue.pop_minimum().first;
 	if (pins.label_get(event.pid).has_value()) {
-		AudioFrame state = event.state;
+		tap_frame_t state = event.state;
 		return Vector2(state.left, state.right);
 	}
 
@@ -72,7 +71,7 @@ std::optional<tap_event_t> TapPatchBay::get_next_event_internal() {
 Vector2 TapPatchBay::get_next_state() {
 	auto o_event = get_next_event_internal();
 	if (o_event.has_value()) {
-		AudioFrame state = o_event->state;
+		tap_frame_t state = o_event->state;
 		return Vector2(state.left, state.right);
 	}
 
@@ -102,7 +101,7 @@ tap_queue_t &TapPatchBay::get_queue_internal() {
 }
 
 tap_label_t TapPatchBay::add_pin(Vector2 initial_state) {
-	AudioFrame frame(initial_state.x, initial_state.y);
+	tap_frame_t frame(initial_state.x, initial_state.y);
 
 	tap_pin_t new_pin;
 	new_pin.components = Vector<tap_label_t>(); // Initialize components
@@ -182,7 +181,7 @@ void TapPatchBay::set_pin_state(tap_label_t label, Vector2 new_state) {
 		return;
 	}
 
-	AudioFrame frame(new_state.x, new_state.y);
+	tap_frame_t frame(new_state.x, new_state.y);
 	get_state_internal(label)->state = frame;
 }
 
@@ -192,15 +191,15 @@ Vector2 TapPatchBay::get_pin_state(tap_label_t label) const {
 		return get_state_missing();
 	}
 
-	AudioFrame frame = pin_states[label].state;
+	tap_frame_t frame = pin_states[label].state;
 	//print_line(itos(label), ": ", frame.left, ", ", frame.right);
 	return Vector2(frame.left, frame.right);
 }
 
-AudioFrame TapPatchBay::get_pin_state_internal(tap_label_t label) const {
+tap_frame_t TapPatchBay::get_pin_state_internal(tap_label_t label) const {
 	if (!pins.label_get(label)) {
 		print_error("Attempted to get internal state of nonexistant pin " + itos(label));
-		return AudioFrame(get_state_missing().x, get_state_missing().y);
+		return tap_frame_t(get_state_missing().x, get_state_missing().y);
 	}
 
 	return pin_states[label].state;
@@ -238,7 +237,7 @@ void TapPatchBay::reset_pin_states() {
 	for (int i = 0; i < pin_states.size(); i++) {
 		tap_event_t *event = &(pin_states.ptrw()[i]);
 		event->time = 0;
-		event->state = AudioFrame(0.0f, 0.0f);
+		event->state = tap_frame_t(0.0f, 0.0f);
 		event->pid = i;
 		event->source_cid = -1;
 	}

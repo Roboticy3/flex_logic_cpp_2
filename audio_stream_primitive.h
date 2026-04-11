@@ -8,6 +8,8 @@
 #include "scene/2d/audio_stream_player_2d.h"
 #include "servers/audio/audio_stream.h"
 
+#include "tap_circuit_types.h"
+
 class AudioStreamPrimitivePlayback;
 
 class AudioStreamPrimitive : public AudioStream {
@@ -17,10 +19,10 @@ class AudioStreamPrimitive : public AudioStream {
   float frequency = 440.0f;
   float amplitude = 1.0f;
 
-  float sin = 1.0f;
-  float tri = 0.0f;
-  float sqr = 0.0f;
-  float saw = 0.0f;
+  float _sin = 1.0f;
+  float _tri = 0.0f;
+  float _sqr = 0.0f;
+  float _saw = 0.0f;
 
   using mutex_t = std::mutex;
   mutable mutex_t audio_playback_mutex;
@@ -73,7 +75,7 @@ protected:
 
 public:
 	//read out the simulator contents
-	virtual int mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) override;
+	virtual int mix(tap_frame_t *p_buffer, float p_rate_scale, int p_frames) override;
 
 	//try to set the live state of the live switch.
 	virtual void start(double p_from_pos = 0.0) override;

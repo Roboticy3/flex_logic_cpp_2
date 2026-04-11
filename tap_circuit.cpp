@@ -237,7 +237,7 @@ int TapCircuit::process_to(tap_time_t end_time) {
 	return count;
 }
 
-void TapCircuit::push_event(tap_time_t time, AudioFrame state, tap_label_t pid) {
+void TapCircuit::push_event(tap_time_t time, tap_frame_t state, tap_label_t pid) {
 	patch_bay->get_queue_internal().insert(tap_event_t{ time, state, pid, patch_bay->COMPONENT_MISSING }, time);
 	latest_event_time = time > latest_event_time ? time : latest_event_time;
 }

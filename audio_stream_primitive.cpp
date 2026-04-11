@@ -1,8 +1,8 @@
 #include <mutex>
 
-#include "core/math/audio_frame.h"
-#include "core/math/math_funcs.h"
 #include "audio_stream_primitive.h"
+#include "core/math/math_funcs.h"
+#include "tap_circuit_types.h"
 
 void AudioStreamPrimitive::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_frequency"), &AudioStreamPrimitive::get_frequency);
@@ -14,20 +14,20 @@ void AudioStreamPrimitive::_bind_methods() {
   ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "amplitude"), "set_amplitude", "get_amplitude");
 
   ClassDB::bind_method(D_METHOD("get_sin"), &AudioStreamPrimitive::get_sin);
-  ClassDB::bind_method(D_METHOD("set_sin", "sin"), &AudioStreamPrimitive::set_sin);
-  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "sin"), "set_sin", "get_sin");
+  ClassDB::bind_method(D_METHOD("set_sin", "_sin"), &AudioStreamPrimitive::set_sin);
+  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "_sin"), "set_sin", "get_sin");
 
   ClassDB::bind_method(D_METHOD("get_tri"), &AudioStreamPrimitive::get_tri);
-  ClassDB::bind_method(D_METHOD("set_tri", "tri"), &AudioStreamPrimitive::set_tri);
-  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "tri"), "set_tri", "get_tri");
+  ClassDB::bind_method(D_METHOD("set_tri", "_tri"), &AudioStreamPrimitive::set_tri);
+  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "_tri"), "set_tri", "get_tri");
 
   ClassDB::bind_method(D_METHOD("get_sqr"), &AudioStreamPrimitive::get_sqr);
-  ClassDB::bind_method(D_METHOD("set_sqr", "sqr"), &AudioStreamPrimitive::set_sqr);
-  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "sqr"), "set_sqr", "get_sqr");
+  ClassDB::bind_method(D_METHOD("set_sqr", "_sqr"), &AudioStreamPrimitive::set_sqr);
+  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "_sqr"), "set_sqr", "get_sqr");
 
   ClassDB::bind_method(D_METHOD("get_saw"), &AudioStreamPrimitive::get_saw);
-  ClassDB::bind_method(D_METHOD("set_saw", "saw"), &AudioStreamPrimitive::set_saw);
-  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "saw"), "set_saw", "get_saw");
+  ClassDB::bind_method(D_METHOD("set_saw", "_saw"), &AudioStreamPrimitive::set_saw);
+  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "_saw"), "set_saw", "get_saw");
 }
 
 float AudioStreamPrimitive::get_frequency() const {
@@ -52,55 +52,55 @@ void AudioStreamPrimitive::set_amplitude(float p_amplitude) {
 
 float AudioStreamPrimitive::get_sin() const {
   std::lock_guard<mutex_t> lock(audio_playback_mutex);
-  return sin;
+  return _sin;
 }
 
 void AudioStreamPrimitive::set_sin(float p_sin) {
   std::lock_guard<mutex_t> lock(audio_playback_mutex);
-  sin = p_sin;
+  _sin = p_sin;
   normalize();
 }
 
 float AudioStreamPrimitive::get_tri() const {
   std::lock_guard<mutex_t> lock(audio_playback_mutex);
-  return tri;
+  return _tri;
 }
 
 void AudioStreamPrimitive::set_tri(float p_tri) {
   std::lock_guard<mutex_t> lock(audio_playback_mutex);
-  tri = p_tri;
+  _tri = p_tri;
   normalize();
 }
 
 float AudioStreamPrimitive::get_sqr() const {
   std::lock_guard<mutex_t> lock(audio_playback_mutex);
-  return sqr;
+  return _sqr;
 }
 
 void AudioStreamPrimitive::set_sqr(float p_sqr) {
   std::lock_guard<mutex_t> lock(audio_playback_mutex);
-  sqr = p_sqr;
+  _sqr = p_sqr;
   normalize();
 }
 
 float AudioStreamPrimitive::get_saw() const {
   std::lock_guard<mutex_t> lock(audio_playback_mutex);
-  return saw;
+  return _saw;
 }
 
 void AudioStreamPrimitive::set_saw(float p_saw) {
   std::lock_guard<mutex_t> lock(audio_playback_mutex);
-  saw = p_saw;
+  _saw = p_saw;
   normalize();
 }
 
 void AudioStreamPrimitive::normalize() {
-  float total = sin + tri + sqr + saw;
+  float total = _sin + _tri + _sqr + _saw;
   if (total > 0.0f) {
-    sin /= total;
-    tri /= total;
-    sqr /= total;
-    saw /= total;
+    _sin /= total;
+    _tri /= total;
+    _sqr /= total;
+    _saw /= total;
   }
 }
 
@@ -118,7 +118,7 @@ Ref<AudioStreamPlayback> AudioStreamPrimitive::instantiate_playback() {
 void AudioStreamPrimitivePlayback::_bind_methods() {
 }
 
-int AudioStreamPrimitivePlayback::mix(AudioFrame *p_buffer, float p_rate_scale, int p_frames) {
+int AudioStreamPrimitivePlayback::mix(tap_frame_t *p_buffer, float p_rate_scale, int p_frames) {
   //use mutex to access stream data
   if (!stream->audio_playback_mutex.try_lock()) {
     return 0;
@@ -127,10 +127,10 @@ int AudioStreamPrimitivePlayback::mix(AudioFrame *p_buffer, float p_rate_scale, 
   // Get stream settings
   double freq = stream->frequency;
   float amp = stream->amplitude;
-  float sin_weight = stream->sin;
-  float tri_weight = stream->tri;
-  float sqr_weight = stream->sqr;
-  float saw_weight = stream->saw;
+  float sin_weight = stream->_sin;
+  float tri_weight = stream->_tri;
+  float sqr_weight = stream->_sqr;
+  float saw_weight = stream->_saw;
 
   stream->audio_playback_mutex.unlock();
 
@@ -169,7 +169,7 @@ int AudioStreamPrimitivePlayback::mix(AudioFrame *p_buffer, float p_rate_scale, 
     
     // Apply amplitude and write to buffer
     sample *= amp;
-    p_buffer[i] = AudioFrame(sample, sample);
+    p_buffer[i] = tap_frame_t(sample, sample);
     
     // Advance phase
     phase += phase_increment;
