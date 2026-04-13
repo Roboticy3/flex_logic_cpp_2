@@ -2,6 +2,7 @@
 #include "core/object/class_db.h"
 #include "core/variant/variant.h"
 #include "tap_circuit_types.h"
+#include <iostream>
 
 #include "tap_network.h"
 
@@ -125,6 +126,8 @@ tap_component_t TapNetwork::validate_pin_labels_and_type(PackedInt64Array pin_la
 
 	Vector<tap_label_t> valid_labels = validate_pin_labels(pin_labels);
 
+	out_requested_memory = component_type.is_valid() ? component_type->get_requested_memory_size() : wire_component_type->get_requested_memory_size();
+
 	//error checks based on type and valid labels
 	if (ct_internal.pin_count == 0) {
 		//wire type
@@ -157,14 +160,15 @@ tap_label_t TapNetwork::add_component(PackedInt64Array pin_labels, tap_label_t c
 		requested_memory = 1024;
 	}
 
+	std::cout << "Requested memory for type " << component_type_index << ": " << requested_memory << std::endl;
 	if (requested_memory > 0) {
 		memory.push_back(Vector<tap_frame_t>());
-		memory.get(memory.size() - 1).resize(requested_memory);
-		for (size_t i = 0; i < requested_memory; i++) {
-			memory.get(memory.size() - 1).set(i, tap_frame_t());
-		}
-		component.memory = memory.get(memory.size() - 1).ptrw();
+		Vector<tap_frame_t> new_slot;
+		new_slot.resize(requested_memory);
+		component.memory = new_slot.ptrw();
 		component.memory_size = requested_memory;
+		memory.push_back(new_slot);
+		std::cout << "Memory location: " << memory.get(memory.size() - 1).ptrw() << std::endl;
 	} else {
 		component.memory = nullptr;
 		component.memory_size = 0;
