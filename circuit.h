@@ -97,7 +97,8 @@ struct circuit_component_t {
 	/*
 	The component's internal memory. Currently unused.
 	*/
-	Vector<S> memory;
+	S* memory;
+	size_t memory_size;
 
 	template <typename F, typename... X>
 	inline void for_each_sensitive(F &&func, X &&...varargs) const {

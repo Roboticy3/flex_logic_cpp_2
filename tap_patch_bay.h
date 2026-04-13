@@ -47,7 +47,7 @@ public:
 		return STATE_MISSING;
 	}
 
-	void push_event(tap_time_t time, Vector2 levels, tap_state_t pid);
+	void push_event(tap_time_t time, Vector2 levels, tap_label_t pid);
 
 	int get_event_count() const;
 	/// @brief Pop the next state from the queue (returns (2,2) if no events are available)

@@ -37,6 +37,8 @@ class TapNetwork : public Resource {
 
 	Labeling<tap_component_t> components;
 
+	Vector<Vector<tap_frame_t>> memory;
+
 protected:
 	static void _bind_methods();
 
@@ -68,9 +70,10 @@ public:
 	 * and produces a component with populated pins if successful, or empty pins otherwise.
 	 * @param pin_labels Array of pin labels to validate
 	 * @param component_type_index Index of the component type
+	 * @param out_requested_memory Output parameter for requested memory size
 	 * @return Validated component or empty if validation failed
 	 */
-	tap_component_t validate_pin_labels_and_type(PackedInt64Array pin_labels, tap_label_t component_type_index) const;
+	tap_component_t validate_pin_labels_and_type(PackedInt64Array pin_labels, tap_label_t component_type_index, size_t& out_requested_memory) const;
 
 	/**
 	 * @brief Add a component on a set of defined pins.

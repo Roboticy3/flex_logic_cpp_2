@@ -6,7 +6,6 @@
 //base tap types
 typedef unsigned int tap_label_t; //used to identify components and pins in separate collections
 typedef unsigned int tap_time_t; //sample count time
-typedef uint16_t tap_state_t; //16-bit audio signal
 typedef AudioFrame tap_frame_t;
 
 //event tap types

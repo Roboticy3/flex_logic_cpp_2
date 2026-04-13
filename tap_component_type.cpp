@@ -1,5 +1,6 @@
 
 #include "core/object/class_db.h"
+#include "tap_gain.h"
 
 #include "tap_component_type.h"
 
@@ -20,6 +21,9 @@ void TapComponentType::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_solver_function", "solver_name"), &TapComponentType::set_solver_function);
 	ClassDB::bind_method(D_METHOD("get_solver_function_name"), &TapComponentType::get_solver_function_name);
 
+	ClassDB::bind_method(D_METHOD("set_requested_memory_size", "new_size"), &TapComponentType::set_requested_memory_size);
+	ClassDB::bind_method(D_METHOD("get_requested_memory_size"), &TapComponentType::get_requested_memory_size);
+
 	//build the possible values for solver_function enum hint
 	String hint;
 	bool first = true;
@@ -36,6 +40,7 @@ void TapComponentType::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "sensitive_pins"), "set_sensitive_pins", "get_sensitive_pins");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "pin_count"), "set_pin_count", "get_pin_count");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "solver_function", PROPERTY_HINT_ENUM, hint), "set_solver_function", "get_solver_function_name");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "requested_memory_size", PROPERTY_HINT_RANGE, "0,1024"), "set_requested_memory_size", "get_requested_memory_size");
 }
 
 void TapComponentType::set_type_name(StringName new_name) {
@@ -72,6 +77,19 @@ void TapComponentType::set_solver_function(StringName solver_name) {
 
 StringName TapComponentType::get_solver_function_name() {
 	return solver_function_name;
+}
+
+void TapComponentType::set_requested_memory_size(size_t new_size) {
+	if (new_size > 1024) {
+		WARN_PRINT_ONCE("Requested memory size exceeds maximum of 1024, clamping to 1024");
+		requested_memory_size = 1024;
+	} else {
+		requested_memory_size = new_size;
+	}
+}
+
+size_t TapComponentType::get_requested_memory_size() const {
+	return requested_memory_size;
 }
 
 void TapComponentType::set_component_type_internal(tap_component_type_t new_component_type) {
@@ -190,6 +208,7 @@ void TapComponentType::initialize_solver_registry_internal() {
 	solver_registry.insert("mixer", mixer_solver);
 	solver_registry.insert("gate", gate_solver);
 	solver_registry.insert("inverter", inverter_solver);
+	solver_registry.insert("gain", TapGain::solver);
 	print_line(vformat("TapComponentType: Registered %d solver functions.", TapComponentType::solver_registry.size()));
 }
 

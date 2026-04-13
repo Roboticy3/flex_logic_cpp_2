@@ -30,6 +30,7 @@ class TapComponentType : public Resource {
 		(void*)wire_solver, //default to wire solver
 	};
 	StringName solver_function_name = "wire";
+	size_t requested_memory_size = 0;
 
 protected:
 	static void _bind_methods();
@@ -46,6 +47,9 @@ public:
 
 	void set_solver_function(StringName solver_name);
 	StringName get_solver_function_name();
+
+	void set_requested_memory_size(size_t new_size);
+	size_t get_requested_memory_size() const;
 
 	void set_component_type_internal(tap_component_type_t new_component_type);
 	tap_component_type_t get_component_type_internal() const;
