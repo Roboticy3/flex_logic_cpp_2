@@ -61,16 +61,18 @@ destination queue.
 `pin_count` : number of pins this component has. If variable, set to 0.
 `solver` : function pointer to the solver function for this type
 */
-template <typename T, typename ComponentID, typename EventT, typename QueueT>
+template <typename T, typename ComponentID, typename EventT, typename QueueT, typename SolverID>
 struct circuit_component_type_t {
-	using solver_t = void (*)(const Vector<EventT> &state, QueueT &queue, T current_time, ComponentID cid);
 
 	StringName name;
 	Vector<int> sensitive;
 	int pin_count = -1;
 	//state vector corresponds to sensitive pins
-	solver_t solver = nullptr;
+	SolverID solver;
 };
+
+template <typename ComponentID,typename ComponentT, typename EventT, typename QueueT, typename T>
+using solver_t = void (*)(ComponentID cid, const ComponentT &component, const Vector<const EventT *> &state, QueueT &queue, T current_time);
 
 /*
 Define a component instance in a circuit. Has a type, which defines how to
@@ -81,12 +83,12 @@ events that the component processes.
 `A` is the component type identifier, of which `circuit_component_type_t` is an
 example.
 */
-template <typename S, typename T, typename PinID, typename ComponentID, typename EventT, typename QueueT>
+template <typename S, typename PinID, typename ComponentTypeT>
 struct circuit_component_t {
 	/*
 	What is this component's name, pinout, and solver.
 	*/
-	circuit_component_type_t<T, ComponentID, EventT, QueueT> component_type;
+	ComponentTypeT component_type;
 	/*
 	The pin ids connected to this component. Since pins store their last event,
 	this also defines the state.

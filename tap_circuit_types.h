@@ -15,5 +15,6 @@ typedef circuit_queue_t<tap_frame_t, tap_time_t, tap_label_t, tap_label_t> tap_q
 
 //component tap types
 typedef circuit_pin_t<tap_frame_t, tap_time_t, tap_label_t> tap_pin_t;
-typedef circuit_component_type_t<tap_time_t, tap_label_t, const tap_event_t *, tap_queue_t> tap_component_type_t;
-typedef circuit_component_t<tap_frame_t, tap_time_t, tap_label_t, tap_label_t, const tap_event_t *, tap_queue_t> tap_component_t;
+typedef circuit_component_type_t<tap_time_t, tap_label_t, tap_event_t, tap_queue_t, void*> tap_component_type_t;
+typedef circuit_component_t<tap_frame_t, tap_label_t, tap_component_type_t> tap_component_t;
+typedef solver_t<tap_label_t, tap_component_t, tap_event_t, tap_queue_t, tap_time_t> tap_solver_t;
