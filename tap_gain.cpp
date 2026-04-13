@@ -1,5 +1,4 @@
 
-#include <iostream>
 
 #include "core/math/math_funcs.h"
 #include "core/typedefs.h"

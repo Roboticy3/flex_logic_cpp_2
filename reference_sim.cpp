@@ -1,11 +1,9 @@
-#include <iostream>
-
 #include "core/object/class_db.h"
 
 #include "reference_sim.h"
 
 // Define the static registry
-HashMap<StringName, ReferenceErrorFunc> ReferenceSim::reference_registry;
+HashMap<StringName, tap_benchmark_t> ReferenceSim::reference_registry;
 
 void ReferenceSim::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_reference_sim_name"), &ReferenceSim::get_reference_sim_name);
@@ -46,7 +44,7 @@ void ReferenceSim::set_reference_sim_name(const StringName& new_reference_sim_na
   }
 
   reference_sim_name = new_reference_sim_name;
-  reference_sim_func = reference_registry[new_reference_sim_name];
+  reference_sim_benchmark = reference_registry[new_reference_sim_name];
 }
 
 Vector2 ReferenceSim::get_total_error() const {
@@ -69,12 +67,20 @@ Vector2 ReferenceSim::measure_error(PackedVector2Array solution, PackedVector2Ar
     problem_vec.push_back(tap_frame_t(problem[i].x, problem[i].y));
   }
   
-  tap_frame_t error = measure_error_internal(solution_vec, problem_vec, 1.0f);
+  tap_frame_t error = measure_error_internal(solution_vec, problem_vec, 1.0);
   return Vector2(error.l, error.r);
 }
 
 tap_frame_t ReferenceSim::measure_error_internal(LocalVector<tap_frame_t> &solution, const LocalVector<tap_frame_t> &problem, double delta_time) {
-  tap_frame_t error = reference_sim_func(solution, problem);
+  tap_frame_t error;
+  
+  // Check mode before invoking function
+  if (reference_sim_benchmark.mode == BENCHMARK_MODE_PURE) {
+    error = reference_sim_benchmark.func(solution, problem);
+  } else {
+    error = tap_frame_t(Math::INF, Math::INF);
+  }
+  
   error.l = error.l < 0 ? -error.l : error.l;
   error.r = error.r < 0 ? -error.r : error.r;
 
@@ -85,7 +91,7 @@ tap_frame_t ReferenceSim::measure_error_internal(LocalVector<tap_frame_t> &solut
   if (error.r < EPSILON) {
     error.r = 0.0f;
   }
-  total_error += tap_frame_t(error.l * delta_time, error.r * delta_time);
+  total_error += tap_frame_t((double)error.l * delta_time, (double)error.r * delta_time);
   return error;
 }
 
@@ -132,9 +138,9 @@ static tap_frame_t reference_1(LocalVector<tap_frame_t> &solution, const LocalVe
 }
 
 void ReferenceSim::initialize_reference_registry_internal() {
-  reference_registry["mixer_no_peak"] = reference_mixer_no_peak;
-  reference_registry["identity"] = reference_identity;
-  reference_registry["1"] = reference_1;
+  reference_registry["mixer_no_peak"] = {BENCHMARK_MODE_PURE, reference_mixer_no_peak};
+  reference_registry["identity"] = {BENCHMARK_MODE_PURE, reference_identity};
+  reference_registry["1"] = {BENCHMARK_MODE_PURE, reference_1};
   print_line(vformat("ReferenceSim: Registered %d reference functions.", reference_registry.size()));
 }
 
@@ -142,5 +148,6 @@ void ReferenceSim::uninitialize_reference_registry_internal() {
   reference_registry.clear();
 }
 
-
-
+bool ReferenceSim::needs_tap() const {
+  return reference_sim_benchmark.mode == BENCHMARK_MODE_TAP;
+}
