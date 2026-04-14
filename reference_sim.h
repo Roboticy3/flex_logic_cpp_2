@@ -46,6 +46,9 @@ class ReferenceSim : public Resource {
   tap_frame_t total_error;
   
   tap_benchmark_t bench;
+  
+  Ref<TapCircuit> circuit;
+  PackedInt64Array output_pids;
 
   protected:
     static void _bind_methods();
@@ -57,6 +60,10 @@ class ReferenceSim : public Resource {
     Vector2 get_total_error() const;
 
     Ref<TapCircuit> get_circuit() const;
+    void set_circuit(Ref<TapCircuit> new_circuit);
+    
+    PackedInt64Array get_output_pids() const;
+    void set_output_pids(const PackedInt64Array &new_output_pids);
 
     /**
      * Reset `total_error` to 0.
