@@ -1,4 +1,6 @@
 #include "core/object/class_db.h"
+#include "tap_component_type.h"
+#include "tap_gain.h"
 
 #include "reference_sim.h"
 
@@ -44,7 +46,7 @@ void ReferenceSim::set_reference_sim_name(const StringName& new_reference_sim_na
   }
 
   reference_sim_name = new_reference_sim_name;
-  reference_sim_benchmark = reference_registry[new_reference_sim_name];
+  bench = reference_registry[new_reference_sim_name];
 }
 
 Vector2 ReferenceSim::get_total_error() const {
@@ -54,6 +56,9 @@ Vector2 ReferenceSim::get_total_error() const {
 void ReferenceSim::reset() {
   //std::cout << "ReferenceSim::reset" << std::endl;
   total_error = tap_frame_t(0, 0);
+  if (bench.circuit.is_valid()) {
+    bench.circuit->reset_live_states();
+  }
 }
 
 Vector2 ReferenceSim::measure_error(PackedVector2Array solution, PackedVector2Array problem) {
@@ -75,8 +80,14 @@ tap_frame_t ReferenceSim::measure_error_internal(LocalVector<tap_frame_t> &solut
   tap_frame_t error;
   
   // Check mode before invoking function
-  if (reference_sim_benchmark.mode == BENCHMARK_MODE_PURE) {
-    error = reference_sim_benchmark.func(solution, problem);
+  if (bench.mode == BENCHMARK_MODE_PURE) {
+    error = bench.func(solution, problem);
+  } else if (bench.mode == BENCHMARK_MODE_TAP && bench.circuit.is_valid()) {
+    //compare solution with circuit solution
+    for (int i = 0; i < MIN(solution.size(), bench.output_pids.size()); i++) {
+      tap_frame_t pin_state = bench.circuit->get_patch_bay()->get_pin_state_internal(bench.output_pids[i]);
+      error += tap_frame_t(fabs(solution[i].l - pin_state.l), fabs(solution[i].r - pin_state.r));
+    }
   } else {
     error = tap_frame_t(Math::INF, Math::INF);
   }
@@ -137,10 +148,117 @@ static tap_frame_t reference_1(LocalVector<tap_frame_t> &solution, const LocalVe
   return error;
 }
 
+static Ref<TapCircuit> create_reference_circuit_test() {
+  Ref<TapCircuit> circuit;
+  circuit.instantiate();
+  
+  circuit->instantiate();
+  
+  auto pb = circuit->get_patch_bay();
+  auto net = circuit->get_network();
+  
+  pb->add_pin(Vector2(0, 0));
+  pb->add_pin(Vector2(0, 0));
+  pb->add_pin(Vector2(0, 0));
+  pb->add_pin(Vector2(0, 0));
+
+  Ref<TapComponentType> mixer;
+  
+  mixer.instantiate();
+  mixer->set_component_type_internal({
+    "Mixer",
+    {0, 1},
+    4,
+    (void*)mixer_solver,
+  });
+
+  net->set_component_types({
+    mixer,
+  });
+
+  net->add_component({0, 1, 2, 3}, 0);
+  
+  return circuit;
+}
+
+static Ref<TapCircuit> create_reference_circuit_2() {
+  Ref<TapCircuit> circuit;
+  circuit.instantiate();
+
+  circuit->instantiate();
+  
+  auto pb = circuit->get_patch_bay();
+  auto net = circuit->get_network();
+
+  //inputs
+  pb->add_pin(Vector2(0, 0));
+  pb->add_pin(Vector2(0, 0));
+  pb->add_pin(Vector2(0, 0));
+
+  //outputs
+  pb->add_pin(Vector2(0, 0));
+
+  //internal
+  //gain out
+  pb->add_pin(Vector2(0, 0));
+  //gate out
+  pb->add_pin(Vector2(0, 0));
+  //mixer peak out
+  pb->add_pin(Vector2(0, 0));
+
+  //component types
+  Ref<TapComponentType> mixer;
+  Ref<TapComponentType> gain;
+  Ref<TapComponentType> gate;
+
+  mixer.instantiate();
+  mixer->set_component_type_internal({
+    "Mixer",
+    {0, 1},
+    4,
+    (void*)mixer_solver,
+  });
+
+  gain.instantiate();
+  gain->set_component_type_internal({
+    "Gain",
+    {0},
+    2,
+    (void*)TapGain::solver,
+  });
+  gain->set_requested_memory_size(128);
+
+  gate.instantiate();
+  gate->set_component_type_internal({
+    "Gate",
+    {0},
+    2,
+    (void*)gate_solver,
+  });
+
+  net->set_component_types({
+    mixer,
+    gain,
+    gate
+  });
+
+  //add components
+  //gain
+  net->add_component({1, 4}, 1);
+  //gate
+  net->add_component({2, 4, 5}, 2);
+  //mixer
+  net->add_component({0, 5, 3, 6}, 0);
+
+  return circuit;
+}
+
 void ReferenceSim::initialize_reference_registry_internal() {
   reference_registry["mixer_no_peak"] = {BENCHMARK_MODE_PURE, reference_mixer_no_peak};
   reference_registry["identity"] = {BENCHMARK_MODE_PURE, reference_identity};
   reference_registry["1"] = {BENCHMARK_MODE_PURE, reference_1};
+  reference_registry["test_circuit"] = {BENCHMARK_MODE_PURE, nullptr, create_reference_circuit_test()};
+  reference_registry["2"] = {BENCHMARK_MODE_PURE, nullptr, create_reference_circuit_2()};
   print_line(vformat("ReferenceSim: Registered %d reference functions.", reference_registry.size()));
 }
 
@@ -148,6 +266,10 @@ void ReferenceSim::uninitialize_reference_registry_internal() {
   reference_registry.clear();
 }
 
+Ref<TapCircuit> ReferenceSim::get_circuit() const {
+  return bench.circuit;
+}
+
 bool ReferenceSim::needs_tap() const {
-  return reference_sim_benchmark.mode == BENCHMARK_MODE_TAP;
+  return bench.mode == BENCHMARK_MODE_TAP;
 }

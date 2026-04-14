@@ -3,6 +3,7 @@
 #include "core/io/resource.h"
 #include "core/string/string_name.h"
 
+#include "core/variant/variant.h"
 #include "tap_circuit_types.h"
 #include "tap_circuit.h"
 
@@ -25,6 +26,7 @@ struct tap_benchmark_t {
   BenchmarkMode mode = BENCHMARK_MODE_PURE;
   ReferenceErrorFunc func = nullptr;
   Ref<TapCircuit> circuit;
+  PackedInt64Array output_pids;
 };
 
 /***
@@ -43,7 +45,7 @@ class ReferenceSim : public Resource {
   StringName reference_sim_name;
   tap_frame_t total_error;
   
-  tap_benchmark_t reference_sim_benchmark;
+  tap_benchmark_t bench;
 
   protected:
     static void _bind_methods();
@@ -53,6 +55,8 @@ class ReferenceSim : public Resource {
     void set_reference_sim_name(const StringName &new_reference_sim_name);
 
     Vector2 get_total_error() const;
+
+    Ref<TapCircuit> get_circuit() const;
 
     /**
      * Reset `total_error` to 0.
@@ -84,7 +88,7 @@ class ReferenceSim : public Resource {
      * Intended for when `delta_time` gets very small in audio threads.
      */
     tap_frame_t measure_error_internal(LocalVector<tap_frame_t> &solution, const LocalVector<tap_frame_t> &problem, double delta_time);
-    
+
     /**
      * @brief Returns true if the current reference function has mode BENCHMARK_MODE_TAP
      */
