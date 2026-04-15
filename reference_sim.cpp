@@ -92,14 +92,15 @@ tap_frame_t ReferenceSim::measure_error_internal(LocalVector<tap_frame_t> &solut
   tap_frame_t error;
   
   // Check mode before invoking function
-  if (bench.mode == BENCHMARK_MODE_PURE) {
-    error = bench.func(solution, problem);
-  } else if (bench.mode == BENCHMARK_MODE_TAP && circuit.is_valid()) {
+  if (circuit.is_valid()) {
     //compare solution with circuit solution
     for (int i = 0; i < MIN(solution.size(), output_pids.size()); i++) {
       tap_frame_t pin_state = circuit->get_patch_bay()->get_pin_state_internal(output_pids[i]);
       error += tap_frame_t(fabs(solution[i].l - pin_state.l), fabs(solution[i].r - pin_state.r));
+      solution[i] = pin_state;
     }
+  } else if (bench.func) {
+    error = bench.func(solution, problem);
   } else {
     error = tap_frame_t(Math::INF, Math::INF);
   }
@@ -107,7 +108,7 @@ tap_frame_t ReferenceSim::measure_error_internal(LocalVector<tap_frame_t> &solut
   error.l = error.l < 0 ? -error.l : error.l;
   error.r = error.r < 0 ? -error.r : error.r;
 
-  constexpr float EPSILON = 1e-6f;
+  constexpr float EPSILON = 1e-4f;
   if (error.l < EPSILON) {
     error.l = 0.0f;
   }

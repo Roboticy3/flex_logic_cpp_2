@@ -14,18 +14,22 @@ void TapGain::solver(tap_label_t cid, const tap_component_t &component, const Ve
     return;
   }
   
-  tap_frame_t rms = component.memory[0];
+  tap_frame_t s = component.memory[0];
   tap_frame_t push_out = component.memory[1];
   tap_frame_t push_in = state[0]->state;
   size_t window_size = component.memory_size - 1;
   
-  tap_frame_t ms = rms * rms;
   tap_frame_t os = push_out * push_out;
   tap_frame_t is = push_in * push_in;
-  tap_frame_t next_ms = ms + (is - os) / window_size;
+  tap_frame_t next_s = s + (is - os);
+  tap_frame_t next_ms = next_s / (float)window_size;
+  tap_frame_t next_rms = {Math::sqrt(next_ms.l), Math::sqrt(next_ms.r)};
+  tap_frame_t next_power = {
+    Math::pow(next_rms.l, POWER),
+    Math::pow(next_rms.r, POWER)
+  };
 
-  component.memory[0].l = Math::sqrt(MAX(next_ms.l, 0.0f));
-  component.memory[0].r = Math::sqrt(MAX(next_ms.r, 0.0f));
+  component.memory[0] = next_s;
 
   for (size_t i = 1; i < component.memory_size - 1; i++) {
     component.memory[i] = component.memory[i + 1];
@@ -41,5 +45,5 @@ void TapGain::solver(tap_label_t cid, const tap_component_t &component, const Ve
   */
 
   tap_time_t next_time = current_time + component.memory_size;
-  queue.insert(tap_event_t{next_time, component.memory[0], state[1]->pid, cid}, next_time);
+  queue.insert(tap_event_t{next_time, next_power, state[1]->pid, cid}, next_time);
 }
