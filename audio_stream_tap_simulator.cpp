@@ -478,6 +478,11 @@ int AudioStreamTapSimulatorPlayback::mix_in(float p_rate_scale, int p_frames) {
           //input circuit events here.
           tap_time_t time = rolling_time + (j * p_rate_scale) * owner->tick_rate;
           owner->circuit->push_event(time, mix_buffer[j], label);
+          
+          // Sync with reference circuit if available
+          if (owner->reference_sim.is_valid() && owner->reference_sim->needs_tap()) {
+            owner->reference_sim->get_circuit()->push_event(time, mix_buffer[j], label);
+          }
         }
 
         tracker.event_count += to_mix / owner->sample_skip;
@@ -517,6 +522,11 @@ int AudioStreamTapSimulatorPlayback::mix_out(tap_frame_t *p_buffer, float p_rate
         problem[j] = patch_bay->get_pin_state(owner->input_streams[j].pid);
       }
       processed_events_count += owner->circuit->process_to(current_time + (i * p_rate_scale) * owner->tick_rate);
+      
+      // Sync with reference circuit if available
+      if (owner->reference_sim.is_valid() && owner->reference_sim->needs_tap()) {
+        owner->reference_sim->get_circuit()->process_to(current_time + (i * p_rate_scale) * owner->tick_rate);
+      }
     
       //fill the solution buffer
       for (int j = 0; j < MIN(owner->output_pids.size(), solution.size()); j++) {
@@ -616,6 +626,12 @@ void AudioStreamTapSimulatorPlayback::start(double p_from_pos) {
       kv.value.playback->start(p_from_pos);
     }
     owner->circuit->reset_live_states();
+    
+    // Sync with reference circuit if available
+    if (owner->reference_sim.is_valid() && owner->reference_sim->needs_tap()) {
+      owner->reference_sim->get_circuit()->reset_live_states();
+    }
+    
     processed_events_count = 0;
   } else {
     stop();
@@ -631,6 +647,12 @@ void AudioStreamTapSimulatorPlayback::stop() {
       kv.value.event_count = 0;
     }
     owner->circuit->reset_live_states();
+    
+    // Sync with reference circuit if available
+    if (owner->reference_sim.is_valid() && owner->reference_sim->needs_tap()) {
+      owner->reference_sim->get_circuit()->reset_live_states();
+    }
+    
     processed_events_count = 0;
   }
 }

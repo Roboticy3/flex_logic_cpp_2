@@ -4,15 +4,15 @@
 
 #include "tap_circuit_types.h"
 
-void wire_solver(const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
+void wire_solver(tap_label_t cid, const tap_component_t &component, const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time);
 
-void none_solver(const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
+void none_solver(tap_label_t cid, const tap_component_t &component, const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time);
 
-void mixer_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
+void mixer_solver(tap_label_t cid, const tap_component_t &component, const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time);
 
-void gate_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
+void gate_solver(tap_label_t cid, const tap_component_t &component, const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time);
 
-void inverter_solver(const Vector<const tap_event_t *> &pins, tap_queue_t &queue, tap_time_t current_time, tap_label_t cid);
+void inverter_solver(tap_label_t cid, const tap_component_t &component, const Vector<const tap_event_t *> &state, tap_queue_t &queue, tap_time_t current_time);
 
 /*
 Define a resource wrapper for tap_component_type_t, allowing the user to
@@ -27,9 +27,10 @@ class TapComponentType : public Resource {
 		"Wire",
 		Vector<int>(), //empty mask => all pins sensitive
 		0, //pin count of 0 means variable
-		&wire_solver, //default to wire solver
+		(void*)wire_solver, //default to wire solver
 	};
 	StringName solver_function_name = "wire";
+	size_t requested_memory_size = 0;
 
 protected:
 	static void _bind_methods();
@@ -47,13 +48,16 @@ public:
 	void set_solver_function(StringName solver_name);
 	StringName get_solver_function_name();
 
+	void set_requested_memory_size(size_t new_size);
+	size_t get_requested_memory_size() const;
+
 	void set_component_type_internal(tap_component_type_t new_component_type);
 	tap_component_type_t get_component_type_internal() const;
 
 	static void initialize_solver_registry_internal();
 	static void uninitialize_solver_registry_internal();
 
-	static HashMap<StringName, tap_component_type_t::solver_t> solver_registry;
+	static HashMap<StringName, tap_solver_t> solver_registry;
 
 	TapComponentType() = default;
 };

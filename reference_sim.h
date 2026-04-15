@@ -3,11 +3,31 @@
 #include "core/io/resource.h"
 #include "core/string/string_name.h"
 
+#include "core/variant/variant.h"
 #include "tap_circuit_types.h"
+#include "tap_circuit.h"
 
 //a reference function takes a solution and problem and returns an error,
 //writing the correct solution to the solution vector in the process
 using ReferenceErrorFunc = tap_frame_t(*)(LocalVector<tap_frame_t> &solution,const LocalVector<tap_frame_t> &problem);
+
+/**
+ * @brief Benchmark mode enumeration
+ */
+enum BenchmarkMode {
+  BENCHMARK_MODE_PURE,
+  BENCHMARK_MODE_TAP
+};
+
+/**
+ * @brief Struct containing a benchmark function pointer and mode
+ */
+struct tap_benchmark_t {
+  BenchmarkMode mode = BENCHMARK_MODE_PURE;
+  ReferenceErrorFunc func = nullptr;
+  Ref<TapCircuit> circuit;
+  PackedInt64Array output_pids;
+};
 
 /***
  * @brief Wrapper for a reference function to validate TapCircuit behavior.
@@ -25,7 +45,10 @@ class ReferenceSim : public Resource {
   StringName reference_sim_name;
   tap_frame_t total_error;
   
-  ReferenceErrorFunc reference_sim_func;
+  tap_benchmark_t bench;
+  
+  Ref<TapCircuit> circuit;
+  PackedInt64Array output_pids;
 
   protected:
     static void _bind_methods();
@@ -35,6 +58,12 @@ class ReferenceSim : public Resource {
     void set_reference_sim_name(const StringName &new_reference_sim_name);
 
     Vector2 get_total_error() const;
+
+    Ref<TapCircuit> get_circuit() const;
+    void set_circuit(Ref<TapCircuit> new_circuit);
+    
+    PackedInt64Array get_output_pids() const;
+    void set_output_pids(const PackedInt64Array &new_output_pids);
 
     /**
      * Reset `total_error` to 0.
@@ -68,9 +97,9 @@ class ReferenceSim : public Resource {
     tap_frame_t measure_error_internal(LocalVector<tap_frame_t> &solution, const LocalVector<tap_frame_t> &problem, double delta_time);
 
     /**
-     * @brief Get the solution from the reference function.
+     * @brief Returns true if the current reference function has mode BENCHMARK_MODE_TAP
      */
-    LocalVector<tap_frame_t> get_solution(const LocalVector<tap_frame_t> &problem);
+    bool needs_tap() const;
 
-    static HashMap<StringName, ReferenceErrorFunc> reference_registry;
+    static HashMap<StringName, tap_benchmark_t> reference_registry;
 };

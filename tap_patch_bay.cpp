@@ -33,7 +33,7 @@ void TapPatchBay::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "state_missing"), "", "get_state_missing");
 }
 
-void TapPatchBay::push_event(tap_time_t time, Vector2 state, tap_state_t pid) {
+void TapPatchBay::push_event(tap_time_t time, Vector2 state, tap_label_t pid) {
 	queue.insert({ time, tap_frame_t(state.x, state.y), pid, COMPONENT_MISSING }, time);
 }
 

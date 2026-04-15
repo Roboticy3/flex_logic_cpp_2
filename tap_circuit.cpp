@@ -212,7 +212,7 @@ void TapCircuit::process_once_internal(tap_queue_t &queue) {
 		}
 
 		//solve the component
-		component->component_type.solver(input, queue, event.time, cid);
+		((tap_solver_t)component->component_type.solver)(cid, component.value(), input, queue, event.time);
 	}
 }
 

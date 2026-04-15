@@ -1,6 +1,8 @@
 
 #include "core/object/class_db.h"
 #include "core/variant/variant.h"
+#include "tap_circuit_types.h"
+#include <iostream>
 
 #include "tap_network.h"
 
@@ -101,8 +103,9 @@ Vector<tap_label_t> TapNetwork::validate_pin_labels(PackedInt64Array pin_labels)
 	return valid_labels;
 }
 
-tap_component_t TapNetwork::validate_pin_labels_and_type(PackedInt64Array pin_labels, tap_label_t component_type_index) const {
+tap_component_t TapNetwork::validate_pin_labels_and_type(PackedInt64Array pin_labels, tap_label_t component_type_index, size_t& out_requested_memory) const {
 	tap_component_t component;
+	out_requested_memory = 0;
 
 	//check that there is a wire type to default to
 	if (wire_component_type.is_null()) {
@@ -122,6 +125,8 @@ tap_component_t TapNetwork::validate_pin_labels_and_type(PackedInt64Array pin_la
 	auto ct_internal = component_type.is_valid() ? component_type->get_component_type_internal() : wire_component_type->get_component_type_internal();
 
 	Vector<tap_label_t> valid_labels = validate_pin_labels(pin_labels);
+
+	out_requested_memory = component_type.is_valid() ? component_type->get_requested_memory_size() : wire_component_type->get_requested_memory_size();
 
 	//error checks based on type and valid labels
 	if (ct_internal.pin_count == 0) {
@@ -144,9 +149,29 @@ tap_component_t TapNetwork::validate_pin_labels_and_type(PackedInt64Array pin_la
 }
 
 tap_label_t TapNetwork::add_component(PackedInt64Array pin_labels, tap_label_t component_type_index) {
-	tap_component_t component = validate_pin_labels_and_type(pin_labels, component_type_index);
+	size_t requested_memory;
+	tap_component_t component = validate_pin_labels_and_type(pin_labels, component_type_index, requested_memory);
 	if (component.pins.size() == 0) {
 		return components.INVALID_LABEL;
+	}
+
+	if (requested_memory > 1024) {
+		ERR_PRINT("TapNetwork::add_component: requested memory " + itos(requested_memory) + " is too large, limiting to 1024.");
+		requested_memory = 1024;
+	}
+
+	std::cout << "Requested memory for type " << component_type_index << ": " << requested_memory << std::endl;
+	if (requested_memory > 0) {
+		memory.push_back(Vector<tap_frame_t>());
+		Vector<tap_frame_t> new_slot;
+		new_slot.resize(requested_memory);
+		component.memory = new_slot.ptrw();
+		component.memory_size = requested_memory;
+		memory.push_back(new_slot);
+		std::cout << "Memory location: " << memory.get(memory.size() - 1).ptrw() << std::endl;
+	} else {
+		component.memory = nullptr;
+		component.memory_size = 0;
 	}
 
 	tap_label_t label = components.label_add(component);
@@ -188,9 +213,15 @@ bool TapNetwork::move_component(tap_label_t label, PackedInt64Array new_pin_labe
 	}
 	tap_component_t component = *p_component;
 
-	tap_component_t destination_component = validate_pin_labels_and_type(new_pin_labels, WIRE_TYPE);
+	size_t dummy_memory;
+	tap_component_t destination_component = validate_pin_labels_and_type(new_pin_labels, WIRE_TYPE, dummy_memory);
 	if (destination_component.pins.size() != component.pins.size()) {
 		return false;
+	}
+
+	if (component.memory_size > 0) {
+		destination_component.memory = component.memory;
+		destination_component.memory_size = component.memory_size;
 	}
 
 	patch_bay->detach_pins_internal(component, label);
@@ -208,6 +239,15 @@ bool TapNetwork::remove_component(tap_label_t label) {
 
 	if (result) {
 		patch_bay->detach_pins_internal(o_component.value(), label);
+
+		if (o_component.value().memory != nullptr) {
+			for (int i = 0; i < memory.size(); i++) {
+				if (memory[i].ptr() == o_component.value().memory) {
+					memory.remove_at(i);
+					break;
+				}
+			}
+		}
 	}
 
 	return result;
@@ -219,6 +259,7 @@ std::optional<tap_component_t> TapNetwork::get_component_internal(tap_label_t co
 
 void TapNetwork::clear_components() {
 	components.clear();
+	memory.clear();
 }
 
 PackedInt64Array TapNetwork::get_component_connections(tap_label_t component_label) const {
