@@ -90,18 +90,34 @@ Vector2 ReferenceSim::measure_error(PackedVector2Array solution, PackedVector2Ar
 
 tap_frame_t ReferenceSim::measure_error_internal(LocalVector<tap_frame_t> &solution, const LocalVector<tap_frame_t> &problem, double delta_time) {
   tap_frame_t error;
+
+  if (solution.size() == 0) {
+    ERR_PRINT("ReferenceSim: Solution vector is empty");
+    return tap_frame_t(Math::INF, Math::INF);
+  }
   
   // Check mode before invoking function
   if (circuit.is_valid()) {
     //compare solution with circuit solution
-    for (int i = 0; i < MIN(solution.size(), output_pids.size()); i++) {
+    if (output_pids.size() == 0) {
+      ERR_PRINT("ReferenceSim: No output pins specified for circuit mode");
+      return tap_frame_t(Math::INF, Math::INF);
+    }
+    tap_frame_t total_solution;
+    for (size_t i = 0; i < solution.size(); i++) {
+      total_solution += solution[i];
+    }
+    tap_frame_t total_state;
+    for (size_t i = 0; i < solution.size(); i++) {
       tap_frame_t pin_state = circuit->get_patch_bay()->get_pin_state_internal(output_pids[i]);
-      error += tap_frame_t(fabs(solution[i].l - pin_state.l), fabs(solution[i].r - pin_state.r));
+      total_state += pin_state;      
       solution[i] = pin_state;
     }
+    error = total_solution - total_state;
   } else if (bench.func) {
     error = bench.func(solution, problem);
   } else {
+    ERR_PRINT("ReferenceSim: No function or circuit specified");
     error = tap_frame_t(Math::INF, Math::INF);
   }
   

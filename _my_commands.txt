@@ -6,6 +6,7 @@ debug editor with gdb:
 
 debug scene with gdb:
   gdb -x modules\flex_logic_cpp_2\gdb_scripts\just_go.txt --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science mockup\mockup.tscn
+  gdb -x modules\flex_logic_cpp_2\gdb_scripts\just_go.txt --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science levels\2\2.tscn
 
 debug run editor (good for breakpointing gdscript):
   .\bin\godot.windows.editor.dev.x86_64.exe ..\..\moon-science\project.godot

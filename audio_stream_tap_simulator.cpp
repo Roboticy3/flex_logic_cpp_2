@@ -12,7 +12,7 @@
 void AudioStreamTapSimulator::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_input_streams"), &AudioStreamTapSimulator::get_input_streams);
   ClassDB::bind_method(D_METHOD("set_input_streams", "streams"), &AudioStreamTapSimulator::set_input_streams);
-  ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "input_streams", PROPERTY_HINT_DICTIONARY_TYPE, "int:AudioStream", PROPERTY_USAGE_EDITOR), "set_input_streams", "get_input_streams");
+  ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "input_streams", PROPERTY_HINT_ARRAY_TYPE, "TapInput", PROPERTY_USAGE_EDITOR), "set_input_streams", "get_input_streams");
 
   ClassDB::bind_method(D_METHOD("get_debug_input_override"), &AudioStreamTapSimulator::get_debug_input_override);
   ClassDB::bind_method(D_METHOD("set_debug_input_override", "label"), &AudioStreamTapSimulator::set_debug_input_override);
@@ -59,22 +59,25 @@ void AudioStreamTapSimulator::_bind_methods() {
   ClassDB::bind_method(D_METHOD("get_loop_count", "pid"), &AudioStreamTapSimulator::get_loop_count);
 }
 
-TypedDictionary<tap_label_t, Ref<AudioStream>> AudioStreamTapSimulator::get_input_streams() const {
-  TypedDictionary<tap_label_t, Ref<AudioStream>> dict;
+TypedArray<Ref<TapInput>> AudioStreamTapSimulator::get_input_streams() const {
+  TypedArray<Ref<TapInput>> array;
   for (const auto &kv : input_streams) {
-    dict.set(kv.pid, kv.stream);
+    array.push_back(kv.value);
   }
-  return dict;
+  return array;
 }
 
-void AudioStreamTapSimulator::set_input_streams(const TypedDictionary<tap_label_t, Ref<AudioStream>> &p_streams) {
+void AudioStreamTapSimulator::set_input_streams(const TypedArray<Ref<TapInput>> &p_inputs) {
   if (circuit.is_valid()) {
     circuit->get_mutex().lock();
   }
   
   input_streams.clear();
-  for (auto kv : p_streams) {
-    input_streams.push_back({kv.value, kv.key});
+  for (int i = 0; i < p_inputs.size(); i++) {
+    Ref<TapInput> input = p_inputs[i];
+    if (input.is_valid()) {
+      input_streams[input->get_pid()] = input;
+    }
   }
   
   if (circuit.is_valid()) {
@@ -320,11 +323,12 @@ bool AudioStreamTapSimulator::can_simulate() const {
   }
 
   for (auto kv : input_streams) {
-    if (kv.stream.is_null()) {
+    Ref<TapInput> input = kv.value;
+    if (input.is_null() || input->get_stream().is_null()) {
       continue;
     }
 
-    if (!circuit->get_patch_bay()->has_pin(kv.pid)) {
+    if (!circuit->get_patch_bay()->has_pin(input->get_pid())) {
       return false;
     }
   }
@@ -371,13 +375,14 @@ Ref<AudioStreamPlayback> AudioStreamTapSimulator::instantiate_playback() {
   trackers.clear();
 
   for (auto kv : input_streams) {
-    Ref<AudioStream> stream = kv.stream;
+    Ref<TapInput> input = kv.value;
+    Ref<AudioStream> stream = input->get_stream();
     if (!stream.is_valid()) {
       ERR_PRINT("Stream is not valid");
       return Ref<AudioStreamPlayback>();
     }
 
-    trackers[kv.pid] = {stream->instantiate_playback()};
+    trackers[input->get_pid()] = {stream->instantiate_playback()};
   }
 
   // Create a new instance of AudioStreamTapSimulatorPlayback
@@ -385,7 +390,8 @@ Ref<AudioStreamPlayback> AudioStreamTapSimulator::instantiate_playback() {
   playback.instantiate();
 
   for (auto kv : input_streams) {
-    playback->debug_input_pids.insert(kv.pid);
+    Ref<TapInput> input = kv.value;
+    playback->debug_input_pids.insert(input->get_pid());
   }
 
   playback->problem.resize(input_streams.size());
@@ -518,8 +524,14 @@ int AudioStreamTapSimulatorPlayback::mix_out(tap_frame_t *p_buffer, float p_rate
   for (int i = 0; i < p_frames; i++) {
     //compute the solution
     if (i % owner->sample_skip == 0) {
-      for (size_t j = 0; j < MIN(owner->input_streams.size(), problem.size()); j++) {
-        problem[j] = patch_bay->get_pin_state(owner->input_streams[j].pid);
+      // Convert HashMap to vector for indexed access
+      LocalVector<Ref<TapInput>> input_vector;
+      for (auto kv : owner->input_streams) {
+        input_vector.push_back(kv.value);
+      }
+      
+      for (size_t j = 0; j < MIN(input_vector.size(), problem.size()); j++) {
+        problem[j] = patch_bay->get_pin_state(input_vector[j]->get_pid());
       }
       processed_events_count += owner->circuit->process_to(current_time + (i * p_rate_scale) * owner->tick_rate);
       
@@ -534,7 +546,7 @@ int AudioStreamTapSimulatorPlayback::mix_out(tap_frame_t *p_buffer, float p_rate
       }
 
       //compute the problem/solution error
-      if (measure_error && i % owner->sample_skip == 0) {
+      if (measure_error) {
         //std::cout << "problem size " << problem.size() << " solution size " << solution.size() << std::endl;
         //std::cout << "plevels: " << problem[0].l << ", " << problem[1].l << "; err: " << solution[0].l - (problem[0].l + problem[1].l) << std::endl;
         owner->reference_sim->measure_error_internal(solution, problem, 1.0 / (mix_rate * (double)p_rate_scale));
@@ -571,7 +583,10 @@ bool AudioStreamTapSimulatorPlayback::mix_force_loop() {
   bool any_playback_stopped = false;
   for (auto &pair : owner->trackers) {
     Ref<AudioStreamPlayback> playback = pair.value.playback;
-    if (playback.is_valid() && !playback->is_playing()) {
+    if (playback.is_null()) {
+      continue;
+    }
+    if (!playback->is_playing()) {
       any_playback_stopped = true;
       break;
     }

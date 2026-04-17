@@ -9,6 +9,7 @@
 #include "reference_frame.h"
 #include "audio_stream_tap_simulator.h"
 #include "audio_stream_primitive.h"
+#include "tap_input.h"
 
 void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
@@ -27,6 +28,7 @@ void initialize_flex_logic_cpp_2_module(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<TapCircuit>();
 	ClassDB::register_class<ReferenceSim>();
 	ClassDB::register_class<ReferenceFrame>();
+	ClassDB::register_class<TapInput>();
 
 	ClassDB::register_class<AudioStreamTapSimulator>();
 	ClassDB::register_class<AudioStreamTapSimulatorPlayback>();

@@ -8,12 +8,13 @@
 #include "tap_circuit_types.h"
 #include "tap_circuit.h"
 #include "reference_sim.h"
+#include "tap_input.h"
 
 /**
  * @brief A TapCircuit driver that maps AudioStreams to input pids for input,
  * and sums output from output pids.
  *
- * @param input_streams A vector of AudioStreams mapped to circuit pids.
+ * @param input_streams A HashMap of TapInputs mapped to circuit pids.
  * @param force_loop If true, inputs are forced to loop externally by the child
  * AudioStreamTapSimulatorPlayback.
  *
@@ -39,12 +40,7 @@ class AudioStreamTapSimulator : public AudioStream {
   GDCLASS(AudioStreamTapSimulator, AudioStream);
   friend class AudioStreamTapSimulatorPlayback;
 
-  struct stream_pid_t {
-    Ref<AudioStream> stream;
-    tap_label_t pid;
-  };
-
-  LocalVector<stream_pid_t> input_streams;
+  HashMap<tap_label_t, Ref<TapInput>> input_streams;
   bool force_loop = true;
 
   tap_label_t debug_input_override = -1;
@@ -85,8 +81,8 @@ protected:
   static void _bind_methods();
 
 public:
-  TypedDictionary<tap_label_t, Ref<AudioStream>> get_input_streams() const;
-  void set_input_streams(const TypedDictionary<tap_label_t, Ref<AudioStream>> &new_input_streams);
+  TypedArray<Ref<TapInput>> get_input_streams() const;
+  void set_input_streams(const TypedArray<Ref<TapInput>> &new_input_streams);
 
   tap_label_t get_debug_input_override() const;
   void set_debug_input_override(tap_label_t new_debug_input_override);
