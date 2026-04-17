@@ -61,14 +61,15 @@ class AudioStreamTapSimulator : public AudioStream {
    *
    * @param playback The AudioStreamPlayback for the input stream.
    * @param last_playback_position The last position in the input stream. Unused
-   * @param loop_count The number of forced loops.
+   * @param inner_loop_count The number of forced loops.
    * @param event_count The total events added to this pid.
    */
   struct playback_tracker_t {
     Ref<AudioStreamPlayback> playback;
     double last_playback_position = 0.0; //unused
-    int loop_count = 0; 
     size_t event_count = 0;
+    double inner_loop_length = Math::INF;
+    int inner_loop_count = 0; 
   };
 
   HashMap<tap_label_t,playback_tracker_t> trackers;

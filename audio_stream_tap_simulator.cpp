@@ -367,7 +367,7 @@ int AudioStreamTapSimulator::get_loop_count(tap_label_t pid) const {
     return -1;
   }
   
-  return trackers[pid].loop_count;
+  return trackers[pid].inner_loop_count;
 }
 
 Ref<AudioStreamPlayback> AudioStreamTapSimulator::instantiate_playback() {
@@ -376,13 +376,21 @@ Ref<AudioStreamPlayback> AudioStreamTapSimulator::instantiate_playback() {
 
   for (auto kv : input_streams) {
     Ref<TapInput> input = kv.value;
+    if (!input.is_valid()) {
+      continue;
+    }
+
     Ref<AudioStream> stream = input->get_stream();
     if (!stream.is_valid()) {
       ERR_PRINT("Stream is not valid");
       return Ref<AudioStreamPlayback>();
     }
 
-    trackers[input->get_pid()] = {stream->instantiate_playback()};
+    double loop_length = Math::INF;
+    if (stream->get_length() > 0 && input->get_inner_loop_count() > 0) {
+      loop_length = stream->get_length() / (double)input->get_inner_loop_count();
+    }
+    trackers[input->get_pid()] = {stream->instantiate_playback(), 0, 0, loop_length, 0};
   }
 
   // Create a new instance of AudioStreamTapSimulatorPlayback
@@ -581,22 +589,31 @@ bool AudioStreamTapSimulatorPlayback::mix_force_loop() {
   }
 
   bool any_playback_stopped = false;
+  bool any_playback_looped = false;
   for (auto &pair : owner->trackers) {
-    Ref<AudioStreamPlayback> playback = pair.value.playback;
+    AudioStreamTapSimulator::playback_tracker_t &tracker = pair.value;
+    Ref<AudioStreamPlayback> playback = tracker.playback;
     if (playback.is_null()) {
       continue;
     }
+
+    if (tracker.inner_loop_length > 0 && playback->get_playback_position() >= (tracker.inner_loop_length * (tracker.inner_loop_count + 1))) {
+      any_playback_looped = true;
+      tracker.inner_loop_count++;
+    }
+
     if (!playback->is_playing()) {
       any_playback_stopped = true;
-      break;
+      tracker.inner_loop_count = 0;
     }
   }
 
-  if (any_playback_stopped) {
+  if (any_playback_stopped || any_playback_looped) {
     owner->_stash_error();
     print_line("Reference frame pushed!");
-    
-    //reset all trackers to keep sync
+  }
+
+  if (any_playback_stopped) {
     stop();
     start();
   }
