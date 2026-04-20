@@ -52,7 +52,7 @@ void AudioStreamTapSimulator::_bind_methods() {
   ClassDB::bind_method(D_METHOD("can_simulate"), &AudioStreamTapSimulator::can_simulate);
   ClassDB::bind_method(D_METHOD("is_simulating"), &AudioStreamTapSimulator::is_simulating);
   ClassDB::bind_method(D_METHOD("is_circuit_correct"), &AudioStreamTapSimulator::is_circuit_correct);
-  ClassDB::bind_method(D_METHOD("top"), &AudioStreamTapSimulator::top);
+  ClassDB::bind_method(D_METHOD("pop_back"), &AudioStreamTapSimulator::pop_back);
 
   ClassDB::bind_method(D_METHOD("get_playback", "pid"), &AudioStreamTapSimulator::get_playback);
   ClassDB::bind_method(D_METHOD("get_event_counts"), &AudioStreamTapSimulator::get_event_counts);
@@ -280,8 +280,10 @@ bool AudioStreamTapSimulator::is_circuit_correct() {
   return frame->get_success();
 }
 
-Ref<ReferenceFrame> AudioStreamTapSimulator::top() {
-  return reference_frame_stack.top();
+Ref<ReferenceFrame> AudioStreamTapSimulator::pop_back() {
+  auto result = reference_frame_stack.top();
+  reference_frame_stack.pop();
+  return result;
 }
 
 void AudioStreamTapSimulator::_stash_error() {

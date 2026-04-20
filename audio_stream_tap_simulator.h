@@ -117,7 +117,7 @@ public:
    * is less than `tolerance`.
    */
   bool is_circuit_correct();
-  Ref<ReferenceFrame> top();
+  Ref<ReferenceFrame> pop_back();
 
   /**
    * @brief Returns true if all tracked playbacks are playing.

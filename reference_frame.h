@@ -43,9 +43,13 @@ public:
     std::lock_guard<std::recursive_mutex> lock(mutex); 
     frames.push_back(frame); 
   }
-  void pop() { 
+  bool pop() { 
     std::lock_guard<std::recursive_mutex> lock(mutex); 
+    if (frames.size() == 0) {
+      return false;
+    }
     frames.remove_at(frames.size() - 1); 
+    return true;
   }
   Ref<ReferenceFrame> top() { 
     std::lock_guard<std::recursive_mutex> lock(mutex); 

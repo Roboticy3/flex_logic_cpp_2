@@ -65,7 +65,7 @@ public:
 	 * @warning For batch processing only. The circuit must be locked before 
 	 * calling this function.
 	 *
-	 * Pops the top event off of the queue.
+	 * Pops the pop_back event off of the queue.
 	 * @param queue The priority queue to process events from
 	 */
 	void process_once_internal(tap_queue_t &queue);
