@@ -556,7 +556,7 @@ int AudioStreamTapSimulatorPlayback::mix_out(tap_frame_t *p_buffer, float p_rate
       }
 
       //compute the problem/solution error
-      if (measure_error) {
+      if (measure_error && !use_debug_reference_override) {
         //std::cout << "problem size " << problem.size() << " solution size " << solution.size() << std::endl;
         //std::cout << "plevels: " << problem[0].l << ", " << problem[1].l << "; err: " << solution[0].l - (problem[0].l + problem[1].l) << std::endl;
         owner->reference_sim->measure_error_internal(solution, problem, 1.0 / (mix_rate * (double)p_rate_scale));
@@ -592,6 +592,8 @@ bool AudioStreamTapSimulatorPlayback::mix_force_loop() {
 
   bool any_playback_stopped = false;
   bool any_playback_looped = false;
+  
+  // First pass: check for stopped playback (highest priority)
   for (auto &pair : owner->trackers) {
     AudioStreamTapSimulator::playback_tracker_t &tracker = pair.value;
     Ref<AudioStreamPlayback> playback = tracker.playback;
@@ -599,20 +601,31 @@ bool AudioStreamTapSimulatorPlayback::mix_force_loop() {
       continue;
     }
 
-    if (tracker.inner_loop_length > 0 && playback->get_playback_position() >= (tracker.inner_loop_length * (tracker.inner_loop_count + 1))) {
-      any_playback_looped = true;
-      tracker.inner_loop_count++;
-    }
-
     if (!playback->is_playing()) {
       any_playback_stopped = true;
-      tracker.inner_loop_count = 0;
+      break; // Stop checking once we find a stopped playback
+    }
+  }
+
+  // Second pass: only check for loops if nothing stopped
+  if (!any_playback_stopped) {
+    for (auto &pair : owner->trackers) {
+      AudioStreamTapSimulator::playback_tracker_t &tracker = pair.value;
+      Ref<AudioStreamPlayback> playback = tracker.playback;
+      if (playback.is_null()) {
+        continue;
+      }
+
+      if (tracker.inner_loop_length > 0 && playback->get_playback_position() >= (tracker.inner_loop_length * (tracker.inner_loop_count + 1))) {
+        any_playback_looped = true;
+        tracker.inner_loop_count++;
+      }
     }
   }
 
   if (any_playback_stopped || any_playback_looped) {
+    print_line("Reference frame pushed! ", owner->reference_sim->get_total_error());
     owner->_stash_error();
-    print_line("Reference frame pushed!");
   }
 
   if (any_playback_stopped) {

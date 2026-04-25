@@ -58,6 +58,7 @@ class ReferenceSim : public Resource {
     void set_reference_sim_name(const StringName &new_reference_sim_name);
 
     Vector2 get_total_error() const;
+    void set_total_error(const Vector2 &new_total_error);
 
     Ref<TapCircuit> get_circuit() const;
     void set_circuit(Ref<TapCircuit> new_circuit);

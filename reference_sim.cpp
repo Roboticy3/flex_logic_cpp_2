@@ -1,6 +1,4 @@
 #include "core/object/class_db.h"
-#include "tap_component_type.h"
-#include "tap_gain.h"
 
 #include "reference_sim.h"
 
@@ -26,7 +24,8 @@ void ReferenceSim::_bind_methods() {
 
 
   ClassDB::bind_method(D_METHOD("get_total_error"), &ReferenceSim::get_total_error);
-  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "total_error", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "", "get_total_error");
+  ClassDB::bind_method(D_METHOD("set_total_error", "total_error"), &ReferenceSim::set_total_error);
+  ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "total_error", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), "set_total_error", "get_total_error");
 
   ClassDB::bind_method(D_METHOD("measure_error", "solution", "problem"), &ReferenceSim::measure_error);
   ClassDB::bind_method(D_METHOD("reset"), &ReferenceSim::reset);
@@ -63,6 +62,10 @@ void ReferenceSim::set_reference_sim_name(const StringName& new_reference_sim_na
 
 Vector2 ReferenceSim::get_total_error() const {
   return Vector2(total_error.l, total_error.r);
+}
+
+void ReferenceSim::set_total_error(const Vector2& new_total_error) {
+  total_error = tap_frame_t(new_total_error.x, new_total_error.y);
 }
 
 void ReferenceSim::reset() {

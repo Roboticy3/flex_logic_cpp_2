@@ -15,6 +15,7 @@ debug basic circuit simulation
   gdb -x modules\flex_logic_cpp_2\gdb_scripts\break_simulation.txt --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science flex_logic_test\audible_sim_construction_test\audible_sim_construction_test.tscn
   gdb -x modules\flex_logic_cpp_2\gdb_scripts\break_simulation.txt --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science flex_logic_test\audible_sim_test\audible_sim_test.tscn
   gdb -x modules\flex_logic_cpp_2\gdb_scripts\break_endpoint.txt --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science levels\0\0.tscn
+  gdb -x modules\flex_logic_cpp_2\gdb_scripts\break_reference_frame.txt --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science scope\scope.tscn
 debug connectivity
   gdb -x modules\flex_logic_cpp_2\gdb_scripts\break_connectedness.txt --args .\bin\godot.windows.editor.dev.x86_64.exe --path ..\..\moon-science flex_logic_test\connectedness_test\connectedness_test.tscn
 no breakpoints:
