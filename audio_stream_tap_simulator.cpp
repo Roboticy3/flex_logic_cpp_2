@@ -556,7 +556,7 @@ int AudioStreamTapSimulatorPlayback::mix_out(tap_frame_t *p_buffer, float p_rate
       }
 
       //compute the problem/solution error
-      if (measure_error && !use_debug_reference_override) {
+      if (measure_error) {
         //std::cout << "problem size " << problem.size() << " solution size " << solution.size() << std::endl;
         //std::cout << "plevels: " << problem[0].l << ", " << problem[1].l << "; err: " << solution[0].l - (problem[0].l + problem[1].l) << std::endl;
         owner->reference_sim->measure_error_internal(solution, problem, 1.0 / (mix_rate * (double)p_rate_scale));

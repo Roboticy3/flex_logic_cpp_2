@@ -127,7 +127,7 @@ tap_frame_t ReferenceSim::measure_error_internal(LocalVector<tap_frame_t> &solut
   error.l = error.l < 0 ? -error.l : error.l;
   error.r = error.r < 0 ? -error.r : error.r;
 
-  constexpr float EPSILON = 1e-4f;
+  constexpr float EPSILON = 1e-5f;
   if (error.l < EPSILON) {
     error.l = 0.0f;
   }
