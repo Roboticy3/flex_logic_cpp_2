@@ -390,7 +390,7 @@ Ref<AudioStreamPlayback> AudioStreamTapSimulator::instantiate_playback() {
 
     double loop_length = Math::INF;
     if (stream->get_length() > 0 && input->get_inner_loop_count() > 0) {
-      loop_length = stream->get_length() / (double)input->get_inner_loop_count();
+      loop_length = (stream->get_length()) / (double)input->get_inner_loop_count();
     }
     trackers[input->get_pid()] = {stream->instantiate_playback(), 0, 0, loop_length, 0};
   }
@@ -616,7 +616,10 @@ bool AudioStreamTapSimulatorPlayback::mix_force_loop() {
         continue;
       }
 
-      if (tracker.inner_loop_length > 0 && playback->get_playback_position() >= (tracker.inner_loop_length * (tracker.inner_loop_count + 1))) {
+      double playback_postion = playback->get_playback_position();
+      double next_inner_loop = (tracker.inner_loop_length * tracker.inner_loop_count + 1);
+
+      if (tracker.inner_loop_length > 0 && playback_postion > next_inner_loop + INNER_LOOP_LENGTH_ROUNDING_ERROR) {
         any_playback_looped = true;
         tracker.inner_loop_count++;
       }
@@ -670,6 +673,9 @@ void AudioStreamTapSimulatorPlayback::start(double p_from_pos) {
     playing = true;
     for (auto kv : owner->trackers) {
       kv.value.event_count = 0;
+      kv.value.inner_loop_count = 0;
+      kv.value.last_playback_position = 0.0;
+
       kv.value.playback->start(p_from_pos);
     }
     owner->circuit->reset_live_states();
@@ -691,7 +697,6 @@ void AudioStreamTapSimulatorPlayback::stop() {
   if (owner->is_simulating()) {
     for (auto kv : owner->trackers) {
       kv.value.playback->stop();
-      kv.value.event_count = 0;
     }
     owner->circuit->reset_live_states();
     

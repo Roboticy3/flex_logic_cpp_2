@@ -184,6 +184,8 @@ class AudioStreamTapSimulatorPlayback : public AudioStreamPlaybackResampled {
   double mix_rate = 44100.0;
   bool playing = false;
 
+  static constexpr double INNER_LOOP_LENGTH_ROUNDING_ERROR = 0.01;
+
 protected:
   static void _bind_methods();
 
