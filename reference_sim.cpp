@@ -1,3 +1,4 @@
+#include "core/math/math_defs.h"
 #include "core/object/class_db.h"
 
 #include "reference_sim.h"
@@ -122,6 +123,10 @@ tap_frame_t ReferenceSim::measure_error_internal(LocalVector<tap_frame_t> &solut
   } else {
     ERR_PRINT("ReferenceSim: No function or circuit specified");
     error = tap_frame_t(Math::INF, Math::INF);
+  }
+
+  if (isnan(error.l) || isnan(error.r)) {
+    error = tap_frame_t(0.0, 0.0);
   }
   
   error.l = error.l < 0 ? -error.l : error.l;

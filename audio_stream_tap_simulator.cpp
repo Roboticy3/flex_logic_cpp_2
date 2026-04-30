@@ -617,7 +617,7 @@ bool AudioStreamTapSimulatorPlayback::mix_force_loop() {
       }
 
       double playback_postion = playback->get_playback_position();
-      double next_inner_loop = (tracker.inner_loop_length * tracker.inner_loop_count + 1);
+      double next_inner_loop = (tracker.inner_loop_length * (tracker.inner_loop_count + 1));
 
       if (tracker.inner_loop_length > 0 && playback_postion > next_inner_loop + INNER_LOOP_LENGTH_ROUNDING_ERROR) {
         any_playback_looped = true;
